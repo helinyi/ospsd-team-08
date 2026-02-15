@@ -1,5 +1,9 @@
-def main():
-    print("Hello from ospsd-team-08!")
+"""Main file. TODO: Update desc."""
+
+
+def main() -> None:
+    """Docstring for main."""
+    return
 
 
 if __name__ == "__main__":
