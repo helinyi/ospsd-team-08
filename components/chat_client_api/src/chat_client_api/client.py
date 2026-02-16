@@ -1,30 +1,25 @@
-"""Core chat client definitions."""
+"""Abstract base class defining the ChatClient contract."""
+
+from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from chat_client_api.models import Channel, Message
 
 
 class ChatClient(ABC):
-    """Abstract base class for chat clients."""
+    """Abstract contract for a Chat client."""
 
     @abstractmethod
-    def send_message(self, channel: str, message: str) -> None:
-        """Send a message."""
-        pass
+    def get_channels(self) -> list[Channel]:
+        """Retrieve all accessible channels."""
 
+    @abstractmethod
+    def get_messages(self, channel_id: str, limit: int = 10) -> list[Message]:
+        """Retrieve recent messages from a channel."""
 
-# for dependency injection
-_client_factory = None
-
-
-def register_client(factory_func):
-    """Register a client factory."""
-    global _client_factory
-    _client_factory = factory_func
-
-
-def get_client() -> ChatClient:
-    """Return an instance of chat client."""
-    if _client_factory is None:
-        raise RuntimeError("No client implementation found!")
-
-    return _client_factory()
+    @abstractmethod
+    def send_message(self, channel_id: str, content: str) -> Message:
+        """Send a message to a channel."""

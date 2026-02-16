@@ -1,12 +1,19 @@
 [project]
 name = "ospsd-team-08"
 version = "0.1.0"
-description = "Add your description here"
+description = "OSPSD Team 08 — Chat client with Discord implementation"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = [
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
     "mypy>=1.19.1",
     "ruff>=0.15.1",
+    "pytest>=8.0.0",
+    "pytest-cov>=6.0.0",
+    "mkdocs>=1.6.0",
+    "mkdocs-material>=9.0.0",
 ]
 
 [tool.uv.workspace]
@@ -23,5 +30,16 @@ ignore = [
   "D203", # `incorrect-blank-line-before-class` (D203) and `no-blank-line-before-class` (D211) are incompatible. Ignoring `incorrect-blank-line-before-class`.
   "D213", # `multi-line-summary-first-line` (D212) and `multi-line-summary-second-line` (D213) are incompatible. Ignoring `multi-line-summary-second-line`.
   "S101", # Use of `assert` detected --> Asserts are good in our opinion. Tests use asserts profusely.
+  "COM812", # Conflicts with ruff formatter
 ]
-per-file-ignores = { "**/test_*.py" = ["TRY300", "BLE001", "ANN401", "SLF001", "E501", "S105", "ARG001", "ARG002", "S106", "INP001", "PLC0415"] }
+
+[tool.ruff.lint.per-file-ignores]
+"main.py" = ["T201"]  # main.py is a CLI entry point, print is expected
+"**/test_*.py" = [
+    "S101",
+    "SLF001",
+    "ARG001",
+    "ARG002",
+    "INP001",
+    "PLC0415",
+]
