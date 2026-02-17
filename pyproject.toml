@@ -43,3 +43,8 @@ ignore = [
     "INP001",
     "PLC0415",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]

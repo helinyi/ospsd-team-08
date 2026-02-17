@@ -12,7 +12,10 @@ if TYPE_CHECKING:
 
 class DiscordClient(ChatClient):
     """Discord implementation of the ChatClient abstract interface."""
-
+    def __init__(self) -> None:
+        """Initialize the Discord client."""
+        pass
+        
     def get_channels(self) -> list[Channel]:
         """Retrieve all accessible channels."""
         msg = "Not implemented yet"
