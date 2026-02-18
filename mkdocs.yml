@@ -1,0 +1,9 @@
+site_name: OSPDS Team 08 Chat Client
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - API Reference: api-reference.md
+
+theme:
+  name: mkdocs
