@@ -15,7 +15,7 @@ class Channel:
 
     id: str
     name: str
-    topic: str = ""
+    topic: str | None = None
 
 
 @dataclass(frozen=True)

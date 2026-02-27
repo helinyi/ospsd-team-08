@@ -5,11 +5,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from chat_client_api.client import ChatClient as ChatClient  # noqa: TC001
-from chat_client_api.client import get_client
-from chat_client_api.client import register_client_factory
-
 from chat_client_api.models import Channel as Channel
-from chat_client_api.models import Message as Message   
+from chat_client_api.models import Message as Message
 
 if TYPE_CHECKING:
     from collections.abc import Callable

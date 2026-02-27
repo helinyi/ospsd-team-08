@@ -23,18 +23,3 @@ class ChatClient(ABC):
     @abstractmethod
     def send_message(self, channel_id: str, content: str) -> Message:
         """Send a message to a channel."""
-        
-from collections.abc import Callable
-
-_client_factory: Callable[[], ChatClient] | None = None
-
-
-def register_client_factory(factory: Callable[[], ChatClient]) -> None:
-    global _client_factory
-    _client_factory = factory
-
-
-def get_client() -> ChatClient:
-    if _client_factory is None:
-        raise RuntimeError("No ChatClient implementation registered.")
-    return _client_factory()

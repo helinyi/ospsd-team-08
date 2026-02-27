@@ -44,6 +44,36 @@ ignore = [
     "PLC0415",
 ]
 
+[tool.mypy]
+strict = true
+python_version = "3.13"
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+markers = [
+    "integration: Integration tests for DI verification",
+    "circleci: Tests that run in CircleCI",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["components"]
+omit = ["*/tests/*", "*/test_*.py"]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
+
 [dependency-groups]
 dev = [
     "mkdocs>=1.6.1",
