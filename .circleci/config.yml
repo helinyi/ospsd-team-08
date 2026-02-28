@@ -1,0 +1,44 @@
+version: 2.1
+
+orbs:
+  python: circleci/python@4.0.0
+
+jobs:
+  check_and_test:
+    docker:
+      - image: cimg/python:3.13.0
+    steps:
+      - checkout
+
+      - python/install-packages:
+          pkg-manager: uv
+
+      - run:
+          name: Static Analysis - Ruff
+          command: uv run ruff check .
+
+      - run:
+          name: Static Analysis - mypy
+          command: uv run mypy --strict .
+
+      - run:
+          name: Run All Tests
+          command: |
+            mkdir -p ./test-results/pytest
+            uv run pytest \
+              --junitxml=./test-results/pytest/results.xml \
+              --cov=components \
+              --cov-report=html:htmlcov \
+              --cov-fail-under=80
+
+      - store_test_results:
+          path: ./test-results
+
+      - store_artifacts:
+          path: htmlcov
+          destination: coverage-report
+
+workflows:
+  main:
+    jobs:
+      - check_and_test
