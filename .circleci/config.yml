@@ -16,7 +16,7 @@ jobs:
           command: uv sync --all-packages --group dev
       - run:
           name: Lint (ruff)
-          command: uv run ruff check .
+          command: uv run ruff check --config pyproject.toml .
       - run:
           name: Type check (mypy)
           command: uv run mypy components/
