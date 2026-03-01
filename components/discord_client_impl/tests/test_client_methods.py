@@ -1,0 +1,95 @@
+"""Unit tests for discord_client_impl."""
+# components/discord_client_impl/tests/test_client_methods.py
+
+from __future__ import annotations
+
+from datetime import UTC
+
+import pytest
+
+from discord_client_impl.client import DiscordClient
+from chat_client_api.models import Channel, Message
+
+
+def test_get_channels_returns_copy_and_has_general_channel():
+    client = DiscordClient()
+
+    channels = client.get_channels()
+    assert isinstance(channels, list)
+    assert all(isinstance(c, Channel) for c in channels)
+
+    # Should contain the default channel
+    assert any(c.id == "general" and c.name == "general" for c in channels)
+
+    # Should return a copy (modifying returned list shouldn't affect internal state)
+    channels.append(Channel(id="fake", name="fake"))
+    channels2 = client.get_channels()
+    assert not any(c.id == "fake" for c in channels2)
+
+
+def test_send_message_to_existing_channel_stores_and_returns_message():
+    client = DiscordClient()
+
+    msg = client.send_message("general", "hello")
+
+    assert isinstance(msg, Message)
+    assert msg.channel_id == "general"
+    assert msg.content == "hello"
+    assert msg.sender == "me"
+
+    # Timestamp should be timezone-aware UTC (your code uses datetime.now(UTC))
+    assert msg.timestamp.tzinfo is not None
+    assert msg.timestamp.tzinfo == UTC
+
+    # Message should now be retrievable from the channel
+    messages = client.get_messages("general")
+    assert len(messages) == 1
+    assert messages[0].id == msg.id
+    assert messages[0].content == "hello"
+
+
+def test_get_messages_returns_last_n_in_order():
+    client = DiscordClient()
+
+    # Send 5 messages
+    for i in range(5):
+        client.send_message("general", f"msg{i}")
+
+    # Ask for last 3
+    msgs = client.get_messages("general", limit=3)
+    assert [m.content for m in msgs] == ["msg2", "msg3", "msg4"]
+
+
+def test_get_messages_limit_larger_than_total_returns_all():
+    client = DiscordClient()
+
+    client.send_message("general", "a")
+    client.send_message("general", "b")
+
+    msgs = client.get_messages("general", limit=10)
+    assert [m.content for m in msgs] == ["a", "b"]
+
+
+def test_get_messages_default_limit_is_10():
+    client = DiscordClient()
+
+    for i in range(15):
+        client.send_message("general", f"m{i}")
+
+    msgs = client.get_messages("general")  # default limit=10
+    assert len(msgs) == 10
+    assert [m.content for m in msgs] == [f"m{i}" for i in range(5, 15)]
+
+
+def test_send_message_raises_for_nonexistent_channel():
+    client = DiscordClient()
+
+    with pytest.raises(ValueError, match=r"Channel with id 'nope' does not exist"):
+        client.send_message("nope", "hi")
+
+
+def test_get_messages_raises_for_nonexistent_channel():
+    client = DiscordClient()
+
+    with pytest.raises(ValueError, match=r"Channel with id 'nope' does not exist"):
+        client.get_messages("nope", limit=1)
