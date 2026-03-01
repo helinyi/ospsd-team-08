@@ -1,5 +1,3 @@
-# components/chat_client_api/tests/test_di_registration.py
-
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -8,20 +6,20 @@ import pytest
 
 import chat_client_api
 from chat_client_api.client import ChatClient
-from chat_client_api.models import Message
+from chat_client_api.models import Channel, Message
 
 
 @pytest.fixture(autouse=True)
 def reset_di_factory() -> None:
-    # Reset global state so tests are order-independent and isolated
+    """Reset DI global state so tests are isolated + order-independent."""
     chat_client_api._client_factory = chat_client_api._default_factory
 
 
 class FakeClient(ChatClient):
-    def get_channels(self):
-        return []
+    def get_channels(self) -> list[Channel]:
+        return [Channel(id="general", name="general")]
 
-    def get_messages(self, channel_id: str, limit: int = 10):
+    def get_messages(self, channel_id: str, limit: int = 10) -> list[Message]:
         return []
 
     def send_message(self, channel_id: str, content: str) -> Message:
