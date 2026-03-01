@@ -42,10 +42,8 @@ ignore = [
     "ARG002",
     "INP001",
     "PLC0415",
-    "D", # Ignore all docstring rules
-    "ANN", # Ignore missing type annotations
-    "PLR2004", # Ignore magic value warnings
 ]
+"**/tests/**/*.py" = ["D", "ANN", "PLR2004", "PLW0108"]
 
 [tool.mypy]
 strict = true
