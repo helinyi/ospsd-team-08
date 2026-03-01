@@ -1,4 +1,5 @@
-"""ospsd-team-08/tests/e2e/test_main_application.py"""
+"""End-to-end tests for the chat client workflow (DI + implementation + interface)."""
+# tests/e2e/test_main_application.py
 
 from __future__ import annotations
 
