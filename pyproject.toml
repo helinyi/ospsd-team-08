@@ -48,6 +48,8 @@ ignore = [
     "INP001",
     "PLC0415",
 ]
+"**/tests/**" = ["D", "ANN", "PLR2004", "PLW0108", "I001"]
+"**/test_*.py" = ["D", "ANN", "PLR2004", "PLW0108", "I001", "S101", "SLF001", "ARG001", "ARG002", "INP001", "PLC0415"]
 
 [tool.mypy]
 strict = true
