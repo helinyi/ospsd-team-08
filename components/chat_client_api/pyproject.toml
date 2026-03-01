@@ -12,3 +12,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/chat_client_api"]
+
+[tool.pytest.ini_options]
+markers = ["e2e: end-to-end tests"]
