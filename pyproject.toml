@@ -22,7 +22,7 @@ members = ["components/*"]
 # ruff configuration borrowed from https://github.com/nyu/oss-taapp-example/blob/root/pyproject.toml
 [tool.ruff]
 line-length = 130 # high for top level due to tests
-target-version = "py311"
+target-version = "py313"
 
 [tool.ruff.lint]
 select = ["ALL"]
