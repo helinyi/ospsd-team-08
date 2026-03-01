@@ -19,7 +19,7 @@ jobs:
           command: uv run ruff check .
       - run:
           name: Type check (mypy)
-          command: uv run mypy --ignore-missing-imports components/discord_client_impl/src/
+          command: uv run mypy components/
 
   test:
     docker:

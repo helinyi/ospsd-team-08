@@ -47,6 +47,10 @@ ignore = [
 [tool.mypy]
 strict = true
 python_version = "3.13"
+mypy_path = [
+    "components/chat_client_api/src",
+    "components/discord_client_impl/src",
+]
 
 [tool.pytest.ini_options]
 minversion = "8.0"
