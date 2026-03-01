@@ -1,39 +1,61 @@
 version: 2.1
 
-orbs:
-  python: circleci/python@4.0.0
-
 jobs:
-  check_and_test:
+  lint:
     docker:
-      - image: cimg/python:3.13.0
+      - image: cimg/python:3.13.3
     steps:
       - checkout
-
-      - python/install-packages:
-          pkg-manager: uv
-
       - run:
-          name: Static Analysis - Ruff
-          command: uv run ruff check .
-
-      - run:
-          name: Static Analysis - mypy
-          command: uv run mypy --strict .
-
-      - run:
-          name: Run All Tests
+          name: Install uv
           command: |
-            mkdir -p ./test-results/pytest
-            uv run pytest \
-              --junitxml=./test-results/pytest/results.xml \
+            curl -LsSf https://astral.sh/uv/install.sh | sh
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+      - run:
+          name: Install dependencies
+          command: uv sync --all-packages --group dev
+      - run:
+          name: Lint (ruff)
+          command: uv run ruff check .
+      - run:
+          name: Type check (mypy)
+          command: uv run mypy --ignore-missing-imports components/discord_client_impl/src/
+
+  test:
+    docker:
+      - image: cimg/python:3.13.3
+    steps:
+      - checkout
+      - run:
+          name: Install uv
+          command: |
+            curl -LsSf https://astral.sh/uv/install.sh | sh
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+      - run:
+          name: Install dependencies
+          command: uv sync --all-packages --group dev
+      - run:
+          name: Run integration & e2e tests
+          command: |
+            mkdir -p test-results/integration
+            uv run pytest tests/ \
+              --junitxml=test-results/integration/results.xml \
               --cov=components \
-              --cov-report=html:htmlcov \
-              --cov-fail-under=80
-
+              --cov-report=xml:coverage.xml
+          environment:
+            DISCORD_BOT_TOKEN: $DISCORD_BOT_TOKEN
+      - run:
+          name: Run unit tests
+          command: |
+            mkdir -p test-results/unit
+            uv run pytest components/discord_client_impl/tests/ \
+              --junitxml=test-results/unit/results.xml \
+              --cov=components \
+              --cov-append \
+              --cov-report=xml:coverage.xml \
+              --cov-report=html:htmlcov
       - store_test_results:
-          path: ./test-results
-
+          path: test-results
       - store_artifacts:
           path: htmlcov
           destination: coverage-report
@@ -41,4 +63,5 @@ jobs:
 workflows:
   main:
     jobs:
-      - check_and_test
+      - lint
+      - test

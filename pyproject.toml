@@ -81,5 +81,9 @@ exclude_lines = [
 [dependency-groups]
 dev = [
     "mkdocs>=1.6.1",
+    "mypy>=1.19.1",
     "pytest>=9.0.2",
+    "pytest-cov>=6.0.0",
+    "ruff>=0.15.1",
+    "types-requests>=2.32.0",
 ]
