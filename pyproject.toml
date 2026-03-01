@@ -63,6 +63,7 @@ pythonpath = [
 markers = [
     "integration: Integration tests for DI verification",
     "circleci: Tests that run in CircleCI",
+    "e2e: end-to-end tests",
 ]
 
 [tool.coverage.run]
