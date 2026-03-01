@@ -35,20 +35,19 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "main.py" = ["T201"]  # main.py is a CLI entry point, print is expected
-"**/test_*.py" = [
+"**/test*.py" = [
+    "D", 
+    "ANN", 
+    "PLR2004", 
+    "PLW0108",
+    "I001",
     "S101",
     "SLF001",
     "ARG001",
     "ARG002",
     "INP001",
     "PLC0415",
-    "D", 
-    "ANN", 
-    "PLR2004", 
-    "PLW0108",
-    "I001"
 ]
-"**/tests/**/*.py" = ["D", "ANN", "PLR2004", "PLW0108", "I001"]
 
 [tool.mypy]
 strict = true
