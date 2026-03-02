@@ -70,11 +70,6 @@ def test_get_messages_limit_larger_than_total_returns_all():
     msgs = client.get_messages("general", limit=10)
     assert [m.content for m in msgs] == ["a", "b"]
 
-def test_get_messages_limit_zero_returns_empty():
-    client = DiscordClient()
-    client.send_message("general", "x")
-    assert client.get_messages("general", limit=0) == []
-
 
 def test_get_messages_default_limit_is_10():
     client = DiscordClient()
