@@ -19,10 +19,8 @@ def test_get_channels_returns_copy_and_has_general_channel() -> None:
     assert isinstance(channels, list)
     assert all(isinstance(c, Channel) for c in channels)
 
-    # Should contain the default channel
     assert any(c.id == "general" and c.name == "general" for c in channels)
 
-    # Should return a copy (modifying returned list shouldn't affect internal state)
     channels.append(Channel(id="fake", name="fake"))
     channels2 = client.get_channels()
     assert not any(c.id == "fake" for c in channels2)
