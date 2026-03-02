@@ -38,11 +38,9 @@ def test_send_message_to_existing_channel_stores_and_returns_message() -> None:
     assert msg.content == "hello"
     assert msg.sender == "me"
 
-    # Timestamp should be timezone-aware UTC (your code uses datetime.now(UTC))
     assert msg.timestamp.tzinfo is not None
     assert msg.timestamp.tzinfo == UTC
 
-    # Message should now be retrievable from the channel
     messages = client.get_messages("general")
     assert len(messages) == 1
     assert messages[0].id == msg.id
