@@ -1,8 +1,12 @@
 """Integration tests for client dependency injection."""
 import pytest
+import chat_client_api
 
 pytestmark = pytest.mark.integration
 
+@pytest.fixture(autouse=True)
+def reset_di_factory() -> None:
+    chat_client_api._client_factory = chat_client_api._default_factory
 
 @pytest.mark.circleci
 def test_get_client_fails_without_implementation() -> None:
