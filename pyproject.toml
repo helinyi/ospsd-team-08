@@ -33,7 +33,7 @@ ignore = [
   "COM812", # Conflicts with ruff formatter
 ]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "main.py" = ["T201"]  # main.py is a CLI entry point, print is expected
 "**/test*.py" = [
     "D", 
