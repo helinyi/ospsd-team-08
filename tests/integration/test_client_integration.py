@@ -25,7 +25,9 @@ def test_get_client_fails_without_implementation() -> None:
 @pytest.mark.circleci
 def test_get_client_returns_discord_client_after_import() -> None:
     """Importing the implementation package should inject DiscordClient."""
-    import discord_client_impl  # noqa: F401
+    import discord_client_impl
+
+    importlib.reload(discord_client_impl)
 
     client = chat_client_api.get_client()
 
