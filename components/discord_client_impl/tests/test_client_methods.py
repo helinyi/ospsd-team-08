@@ -7,8 +7,9 @@ from datetime import UTC
 
 import pytest
 
-from discord_client_impl.client import DiscordClient
 from chat_client_api.models import Channel, Message
+from discord_client_impl.client import DiscordClient
+
 
 
 def test_get_channels_returns_copy_and_has_general_channel():
@@ -68,6 +69,11 @@ def test_get_messages_limit_larger_than_total_returns_all():
 
     msgs = client.get_messages("general", limit=10)
     assert [m.content for m in msgs] == ["a", "b"]
+
+def test_get_messages_limit_zero_returns_empty():
+    client = DiscordClient()
+    client.send_message("general", "x")
+    assert client.get_messages("general", limit=0) == []
 
 
 def test_get_messages_default_limit_is_10():
