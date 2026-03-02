@@ -12,7 +12,7 @@ from discord_client_impl.client import DiscordClient
 
 
 
-def test_get_channels_returns_copy_and_has_general_channel():
+def test_get_channels_returns_copy_and_has_general_channel() -> None:
     client = DiscordClient()
 
     channels = client.get_channels()
@@ -28,7 +28,7 @@ def test_get_channels_returns_copy_and_has_general_channel():
     assert not any(c.id == "fake" for c in channels2)
 
 
-def test_send_message_to_existing_channel_stores_and_returns_message():
+def test_send_message_to_existing_channel_stores_and_returns_message() -> None:
     client = DiscordClient()
 
     msg = client.send_message("general", "hello")
@@ -49,7 +49,7 @@ def test_send_message_to_existing_channel_stores_and_returns_message():
     assert messages[0].content == "hello"
 
 
-def test_get_messages_returns_last_n_in_order():
+def test_get_messages_returns_last_n_in_order() -> None:
     client = DiscordClient()
 
     # Send 5 messages
@@ -61,7 +61,7 @@ def test_get_messages_returns_last_n_in_order():
     assert [m.content for m in msgs] == ["msg2", "msg3", "msg4"]
 
 
-def test_get_messages_limit_larger_than_total_returns_all():
+def test_get_messages_limit_larger_than_total_returns_all() -> None:
     client = DiscordClient()
 
     client.send_message("general", "a")
@@ -71,7 +71,7 @@ def test_get_messages_limit_larger_than_total_returns_all():
     assert [m.content for m in msgs] == ["a", "b"]
 
 
-def test_get_messages_default_limit_is_10():
+def test_get_messages_default_limit_is_10() -> None:
     client = DiscordClient()
 
     for i in range(15):
@@ -82,14 +82,14 @@ def test_get_messages_default_limit_is_10():
     assert [m.content for m in msgs] == [f"m{i}" for i in range(5, 15)]
 
 
-def test_send_message_raises_for_nonexistent_channel():
+def test_send_message_raises_for_nonexistent_channel() -> None:
     client = DiscordClient()
 
     with pytest.raises(ValueError, match=r"Channel with id 'nope' does not exist"):
         client.send_message("nope", "hi")
 
 
-def test_get_messages_raises_for_nonexistent_channel():
+def test_get_messages_raises_for_nonexistent_channel() -> None:
     client = DiscordClient()
 
     with pytest.raises(ValueError, match=r"Channel with id 'nope' does not exist"):
