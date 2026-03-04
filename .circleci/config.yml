@@ -1,0 +1,67 @@
+version: 2.1
+
+jobs:
+  lint:
+    docker:
+      - image: cimg/python:3.13.3
+    steps:
+      - checkout
+      - run:
+          name: Install uv
+          command: |
+            curl -LsSf https://astral.sh/uv/install.sh | sh
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+      - run:
+          name: Install dependencies
+          command: uv sync --all-packages --group dev
+      - run:
+          name: Lint (ruff)
+          command: uv run ruff check --config pyproject.toml .
+      - run:
+          name: Type check (mypy)
+          command: uv run mypy components/
+
+  test:
+    docker:
+      - image: cimg/python:3.13.3
+    steps:
+      - checkout
+      - run:
+          name: Install uv
+          command: |
+            curl -LsSf https://astral.sh/uv/install.sh | sh
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+      - run:
+          name: Install dependencies
+          command: uv sync --all-packages --group dev
+      - run:
+          name: Run integration & e2e tests
+          command: |
+            mkdir -p test-results/integration
+            uv run pytest tests/ \
+              --junitxml=test-results/integration/results.xml \
+              --cov=components \
+              --cov-report=xml:coverage.xml
+          environment:
+            DISCORD_BOT_TOKEN: $DISCORD_BOT_TOKEN
+      - run:
+          name: Run unit tests
+          command: |
+            mkdir -p test-results/unit
+            uv run pytest components/discord_client_impl/tests/ \
+              --junitxml=test-results/unit/results.xml \
+              --cov=components \
+              --cov-append \
+              --cov-report=xml:coverage.xml \
+              --cov-report=html:htmlcov
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: htmlcov
+          destination: coverage-report
+
+workflows:
+  main:
+    jobs:
+      - lint
+      - test
