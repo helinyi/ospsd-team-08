@@ -17,34 +17,35 @@ class DiscordClient(ChatClient):
 
     def __init__(self) -> None:
         """Initialize the Discord client (in-memory)."""
+        general = Channel(id="general", name="general")
         self._channels: list[Channel] = [
-            Channel(id="general", name="general")
+            general
         ]
-        self._messages_by_channel: dict[str, list[Message]] = {"general": []}
+        self._messages_by_channel: dict[Channel, list[Message]] = {general: []}
 
-    def _validate_channel_exists(self, channel_id: str) -> None:
+    def _validate_channel_exists(self, channel: Channel) -> None:
         """Validate that a channel exists.
 
         Args:
-            channel_id: The channel ID to validate.
+            channel: The channel to validate.
 
         Raises:
             ValueError: If the channel does not exist.
 
         """
-        if not any(channel.id == channel_id for channel in self._channels):
-            msg = f"Channel with id '{channel_id}' does not exist."
+        if not any(channel.id == c.id for c in self._channels):
+            msg = f"Channel with id '{channel.id}' does not exist."
             raise ValueError(msg)
 
     def get_channels(self) -> list[Channel]:
         """Retrieve all accessible channels."""
         return list(self._channels)
 
-    def get_messages(self, channel_id: str, limit: int = 10) -> list[Message]:
+    def get_messages(self, channel: Channel, limit: int = 10) -> list[Message]:
         """Retrieve recent messages from a channel.
 
         Args:
-            channel_id: The ID of the channel.
+            channel: The channel object.
             limit: Maximum number of messages to retrieve.
 
         Returns:
@@ -54,15 +55,15 @@ class DiscordClient(ChatClient):
             ValueError: If the channel does not exist.
 
         """
-        self._validate_channel_exists(channel_id)
-        messages = self._messages_by_channel.get(channel_id, [])
+        self._validate_channel_exists(channel)
+        messages = self._messages_by_channel.get(channel, [])
         return list(messages[-limit:])
 
-    def send_message(self, channel_id: str, content: str) -> Message:
+    def send_message(self, channel: Channel, content: str) -> Message:
         """Send a message to a channel.
 
         Args:
-            channel_id: The ID of the channel to send to.
+            channel: The channel to send to.
             content: The message content.
 
         Returns:
@@ -72,13 +73,13 @@ class DiscordClient(ChatClient):
             ValueError: If the channel does not exist.
 
         """
-        self._validate_channel_exists(channel_id)
+        self._validate_channel_exists(channel)
         msg = Message(
             id=str(uuid4()),
-            channel_id=channel_id,
+            channel=channel,
             sender="me",
             content=content,
             timestamp=datetime.now(UTC),
         )
-        self._messages_by_channel.setdefault(channel_id, []).append(msg)
+        self._messages_by_channel.setdefault(channel, []).append(msg)
         return msg

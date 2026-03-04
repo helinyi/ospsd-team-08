@@ -19,13 +19,13 @@ class FakeClient(ChatClient):
     def get_channels(self) -> list[Channel]:
         return [Channel(id="general", name="general")]
 
-    def get_messages(self, channel_id: str, limit: int = 10) -> list[Message]:
+    def get_messages(self, channel: Channel, limit: int = 10) -> list[Message]:
         return []
 
-    def send_message(self, channel_id: str, content: str) -> Message:
+    def send_message(self, channel: Channel, content: str) -> Message:
         return Message(
             id="test",
-            channel_id=channel_id,
+            channel=channel,
             sender="me",
             content=content,
             timestamp=datetime.now(UTC),

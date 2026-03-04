@@ -23,7 +23,7 @@ class Message:
     """Represents a chat message."""
 
     id: str
-    channel_id: str
+    channel: Channel
     sender: str
     content: str
     timestamp: datetime

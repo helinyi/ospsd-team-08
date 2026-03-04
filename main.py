@@ -17,7 +17,7 @@ def main() -> None:
     if channels:
         first = channels[0]
         print(f"\n Recent messages in #{first.name} ---")
-        messages = client.get_messages(first.id, limit=5)
+        messages = client.get_messages(first, limit=5)
         for msg in messages:
             print(f"  [{msg.timestamp:%Y-%m-%d %H:%M}] {msg.sender}: {msg.content}")
 

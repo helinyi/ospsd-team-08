@@ -17,9 +17,9 @@ class ChatClient(ABC):
         """Retrieve all accessible channels."""
 
     @abstractmethod
-    def get_messages(self, channel_id: str, limit: int = 10) -> list[Message]:
+    def get_messages(self, channel: Channel, limit: int = 10) -> list[Message]:
         """Retrieve recent messages from a channel."""
 
     @abstractmethod
-    def send_message(self, channel_id: str, content: str) -> Message:
+    def send_message(self, channel: Channel, content: str) -> Message:
         """Send a message to a channel."""

@@ -20,11 +20,11 @@ def test_e2e_workflow_send_and_fetch_message() -> None:
     assert isinstance(channels, list)
     assert len(channels) >= 1
 
-    channel_id = channels[0].id
+    channel = channels[0]
 
     # 2) Send message
-    sent = client.send_message(channel_id, "e2e: hello")
+    sent = client.send_message(channel, "e2e: hello")
 
     # 3) Fetch messages and confirm round-trip
-    msgs = client.get_messages(channel_id, limit=10)
+    msgs = client.get_messages(channel, limit=10)
     assert any(m.id == sent.id and m.content == "e2e: hello" for m in msgs)
