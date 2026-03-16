@@ -25,14 +25,18 @@ def test_get_client_fails_without_implementation() -> None:
 
 
 @pytest.mark.circleci
-def test_get_client_returns_discord_client_after_import() -> None:
+def test_get_client_returns_discord_client_after_import(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Importing the implementation package should inject DiscordClient."""
-    import discord_client_impl
+    monkeypatch.setenv("DISCORD_BOT_TOKEN", "test-token")
+    monkeypatch.setenv("DISCORD_GUILD_ID", "123456789")
 
+    import discord_client_impl
     importlib.reload(discord_client_impl)
 
     client = chat_client_api.get_client()
 
     from discord_client_impl.client import DiscordClient
-
     assert isinstance(client, DiscordClient)
+

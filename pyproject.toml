@@ -63,6 +63,7 @@ mypy_path = [
 minversion = "8.0"
 testpaths = ["tests"]
 addopts = "-v --tb=short"
+env_files = [".env"]
 pythonpath = [
     "components/chat_client_api/src",
     "components/discord_client_impl/src",
@@ -96,6 +97,7 @@ dev = [
     "mypy>=1.19.1",
     "pytest>=9.0.2",
     "pytest-cov>=6.0.0",
+    "pytest-dotenv>=0.5.2",
     "ruff>=0.15.1",
     "types-requests>=2.32.0",
 ]

@@ -9,7 +9,7 @@ from chat_client_api import register_client_factory
 from discord_client_impl.client import DiscordClient
 
 
-def _create_discord_client() -> DiscordClient:
+def _create_discord_client() -> DiscordClient: # pragma: no cover, requires actual Discord credentials
     """Create a DiscordClient instance."""
     return DiscordClient()
 

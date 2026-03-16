@@ -1,66 +1,119 @@
-"""Concrete Discord implementation of the ChatClient interface (minimal stub)."""
+"""Concrete Discord implementation of the ChatClient interface."""
 
 from __future__ import annotations
 
+import os
 from datetime import UTC, datetime
-from uuid import uuid4
 
+import requests
 from chat_client_api.client import ChatClient
 from chat_client_api.models import Channel, Message
 
+from discord_client_impl.auth import DiscordAuthenticator
+
 
 class DiscordClient(ChatClient):
-    """Discord implementation of the ChatClient abstract interface.
+    """Discord implementation of the ChatClient abstract interface."""
 
-    Note: This is a minimal in-memory implementation for HW1.
-    """
+    _DISCORD_API_BASE = "https://discord.com/api/v10"
 
-    def __init__(self) -> None:
-        """Initialize the Discord client (in-memory)."""
-        general = Channel(id="general", name="general")
-        self._channels: list[Channel] = [
-            general
-        ]
-        self._messages_by_channel: dict[Channel, list[Message]] = {general: []}
-
-    def _validate_channel_exists(self, channel: Channel) -> None:
-        """Validate that a channel exists.
+    def __init__(self, authenticator: DiscordAuthenticator | None = None) -> None:
+        """Initialize the Discord client.
 
         Args:
-            channel: The channel to validate.
-
-        Raises:
-            ValueError: If the channel does not exist.
+            authenticator: Optional authenticator. If not provided, loads from env.
 
         """
-        if not any(channel.id == c.id for c in self._channels):
-            msg = f"Channel with id '{channel.id}' does not exist."
-            raise ValueError(msg)
+        self._auth = authenticator or DiscordAuthenticator.from_env()
+        guild_id = os.getenv("DISCORD_GUILD_ID")
+        if not guild_id:
+            msg = "Missing required environment variable: DISCORD_GUILD_ID"
+            raise RuntimeError(msg)
+        self._guild_id = guild_id
 
     def get_channels(self) -> list[Channel]:
-        """Retrieve all accessible channels."""
-        return list(self._channels)
+        """Retrieve all text channels from the Discord guild.
+
+        Returns:
+            A list of text channels in the guild.
+
+        Raises:
+            RuntimeError: If the API call fails.
+
+        """
+        url = f"{self._DISCORD_API_BASE}/guilds/{self._guild_id}/channels"
+        try:
+            response = requests.get(url, headers=self._auth.get_headers(), timeout=10)
+        except requests.RequestException as exc:
+            msg = f"Failed to fetch channels: {exc}"
+            raise RuntimeError(msg) from exc
+
+        if not response.ok:
+            msg = f"Discord API returned status {response.status_code} fetching channels"
+            raise RuntimeError(msg)
+
+        raw_channels: list[dict[str, object]] = response.json()
+        return [
+            Channel(
+                id=str(channel["id"]),
+                name=str(channel["name"]),
+            )
+            for channel in raw_channels
+            if channel.get("type") == 0  # 0 = text channel
+        ]
 
     def get_messages(self, channel: Channel, limit: int = 10) -> list[Message]:
-        """Retrieve recent messages from a channel.
+        """Retrieve recent messages from a Discord channel.
 
         Args:
-            channel: The channel object.
+            channel: The channel to fetch messages from.
             limit: Maximum number of messages to retrieve.
 
         Returns:
-            A list of recent messages from the channel.
+            A list of recent messages ordered oldest to newest.
 
         Raises:
-            ValueError: If the channel does not exist.
+            RuntimeError: If the API call fails.
 
         """
-        self._validate_channel_exists(channel)
-        messages = self._messages_by_channel.get(channel, [])
-        return list(messages[-limit:])
+        url = f"{self._DISCORD_API_BASE}/channels/{channel.id}/messages"
+        params = {"limit": limit}
+        try:
+            response = requests.get(
+                url,
+                headers=self._auth.get_headers(),
+                params=params,
+                timeout=10,
+            )
+        except requests.RequestException as exc:
+            msg = f"Failed to fetch messages: {exc}"
+            raise RuntimeError(msg) from exc
+
+        if not response.ok:
+            msg = f"Discord API returned status {response.status_code} fetching messages"
+            raise RuntimeError(msg)
+
+        raw_messages: list[dict[str, object]] = response.json()
+        messages = [
+            Message(
+                id=str(raw["id"]),
+                channel=channel,
+                sender=str(
+                    raw["author"]["username"]  # type: ignore[index]
+                    if isinstance(raw.get("author"), dict)
+                    else "unknown"
+                ),
+                content=str(raw.get("content", "")),
+                timestamp=datetime.fromisoformat(
+                    str(raw["timestamp"])
+                ).replace(tzinfo=UTC),
+            )
+            for raw in raw_messages
+        ]
+        return list(reversed(messages))
 
     def send_message(self, channel: Channel, content: str) -> Message:
-        """Send a message to a channel.
+        """Send a message to a Discord channel.
 
         Args:
             channel: The channel to send to.
@@ -70,16 +123,37 @@ class DiscordClient(ChatClient):
             The sent message.
 
         Raises:
-            ValueError: If the channel does not exist.
+            RuntimeError: If the API call fails.
 
         """
-        self._validate_channel_exists(channel)
-        msg = Message(
-            id=str(uuid4()),
+        url = f"{self._DISCORD_API_BASE}/channels/{channel.id}/messages"
+        payload = {"content": content}
+        try:
+            response = requests.post(
+                url,
+                headers=self._auth.get_headers(),
+                json=payload,
+                timeout=10,
+            )
+        except requests.RequestException as exc:
+            msg = f"Failed to send message: {exc}"
+            raise RuntimeError(msg) from exc
+
+        if not response.ok:
+            msg = f"Discord API returned status {response.status_code} sending message"
+            raise RuntimeError(msg)
+
+        raw: dict[str, object] = response.json()
+        return Message(
+            id=str(raw["id"]),
             channel=channel,
-            sender="me",
-            content=content,
-            timestamp=datetime.now(UTC),
+            sender=str(
+                raw["author"]["username"]  # type: ignore[index]
+                if isinstance(raw.get("author"), dict)
+                else "unknown"
+            ),
+            content=str(raw.get("content", "")),
+            timestamp=datetime.fromisoformat(
+                str(raw["timestamp"])
+            ).replace(tzinfo=UTC),
         )
-        self._messages_by_channel.setdefault(channel, []).append(msg)
-        return msg
