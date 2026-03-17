@@ -8,6 +8,7 @@ import requests
 
 _HTTP_UNAUTHORIZED = 401
 
+
 class DiscordAuthenticator:
     """Encapsulates Discord Bot Token authentication."""
 
