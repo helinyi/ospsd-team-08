@@ -5,7 +5,6 @@ from __future__ import annotations
 import os
 
 import requests
-
 from dotenv import load_dotenv
 
 load_dotenv()
