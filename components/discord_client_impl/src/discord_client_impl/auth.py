@@ -6,7 +6,12 @@ import os
 
 import requests
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 _HTTP_UNAUTHORIZED = 401
+
 
 class DiscordAuthenticator:
     """Encapsulates Discord Bot Token authentication."""

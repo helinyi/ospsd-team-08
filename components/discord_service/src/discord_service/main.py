@@ -8,9 +8,7 @@ from discord_client_impl.client import DiscordClient
 from fastapi import FastAPI
 
 app = FastAPI()
-def get_client() -> DiscordClient:  # pragma: no cover
-    """Create a DiscordClient instance."""
-    return DiscordClient()
+client = DiscordClient()
 
 
 @app.get("/health")

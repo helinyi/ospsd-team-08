@@ -5,6 +5,7 @@ description = "OSPSD Team 08 — Chat client with Discord implementation"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "dotenv>=0.9.9",
     "fastapi>=0.135.1",
     "uvicorn>=0.42.0",
 ]
