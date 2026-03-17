@@ -1,4 +1,5 @@
 import pytest
+from collections.abc import Generator
 from fastapi.testclient import TestClient
 from unittest.mock import MagicMock, patch
 from discord_service.main import app
@@ -9,7 +10,7 @@ client = TestClient(app)
 
 
 @pytest.fixture
-def mock_discord_client():
+def mock_discord_client() -> Generator[MagicMock]:
     """Create a mock instance of the DiscordClient."""
     with patch("discord_service.main.get_client") as mock_get:
         mock_instance = MagicMock()
@@ -17,13 +18,13 @@ def mock_discord_client():
         yield mock_instance
 
 
-def test_health_check():
+def test_health_check() -> None:
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
 
 
-def test_get_channels_success(mock_discord_client):
+def test_get_channels_success(mock_discord_client: MagicMock) -> None:
     mock_discord_client.get_channels.return_value = [Channel(id="123", name="general")]
 
     response = client.get("/channels")
@@ -33,7 +34,7 @@ def test_get_channels_success(mock_discord_client):
     mock_discord_client.get_channels.assert_called_once()
 
 
-def test_send_message_success(mock_discord_client):
+def test_send_message_success(mock_discord_client: MagicMock) -> None:
     channel = Channel(id="123", name="general")
     mock_discord_client.get_channels.return_value = [channel]
 
@@ -53,7 +54,7 @@ def test_send_message_success(mock_discord_client):
     mock_discord_client.send_message.assert_called_once()
 
 
-def test_send_message_channel_not_found(mock_discord_client):
+def test_send_message_channel_not_found(mock_discord_client: MagicMock) -> None:
     mock_discord_client.get_channels.return_value = []
 
     response = client.post("/channels/999/messages", json={"content": "Fail"})
@@ -62,7 +63,7 @@ def test_send_message_channel_not_found(mock_discord_client):
     assert "not found" in response.json()["detail"]
 
 
-def test_send_message_discord_error(mock_discord_client):
+def test_send_message_discord_error(mock_discord_client: MagicMock) -> None:
     channel = Channel(id="123", name="general")
     mock_discord_client.get_channels.return_value = [channel]
     mock_discord_client.send_message.side_effect = RuntimeError("Discord Down")
