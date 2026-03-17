@@ -1,22 +1,25 @@
-import os
-from fastapi import FastAPI
-import uvicorn
+"""The endpoints for the Discord service."""
 
+import os
+
+import uvicorn
 from chat_client_api.models import Channel
 from discord_client_impl.client import DiscordClient
-
+from fastapi import FastAPI
 
 app = FastAPI()
 client = DiscordClient()
 
 
 @app.get("/health")
-def health():
+def health() -> dict[str, str]:
+    """Health check endpoint."""
     return {"status": "ok"}
 
 
 @app.get("/channels")
 def get_channels() -> list[Channel]:
+    """Return the channels."""
     return client.get_channels()
 
 
