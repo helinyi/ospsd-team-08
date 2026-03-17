@@ -4,7 +4,10 @@ version = "0.1.0"
 description = "OSPSD Team 08 — Chat client with Discord implementation"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "fastapi>=0.135.1",
+    "uvicorn>=0.42.0",
+]
 
 [project.optional-dependencies]
 dev = [
@@ -36,9 +39,9 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "main.py" = ["T201"]  # main.py is a CLI entry point, print is expected
 "**/test*.py" = [
-    "D", 
-    "ANN", 
-    "PLR2004", 
+    "D",
+    "ANN",
+    "PLR2004",
     "PLW0108",
     "I001",
     "S101",
@@ -57,6 +60,7 @@ python_version = "3.13"
 mypy_path = [
     "components/chat_client_api/src",
     "components/discord_client_impl/src",
+    "components/discord_service/src",
 ]
 
 [tool.pytest.ini_options]
@@ -67,6 +71,7 @@ env_files = [".env"]
 pythonpath = [
     "components/chat_client_api/src",
     "components/discord_client_impl/src",
+    "components/discord_service/src",
 ]
 markers = [
     "integration: Integration tests for DI verification",

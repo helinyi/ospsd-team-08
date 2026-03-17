@@ -1,0 +1,11 @@
+[project]
+name = "discord-service"
+version = "0.1.0"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+]
+
+[tool.uv.sources]
+chat-client-api = { workspace = true }
+discord-client-impl = { workspace = true }
