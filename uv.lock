@@ -236,14 +236,18 @@ dev = [{ name = "types-requests", specifier = ">=2.32.4.20260107" }]
 [[package]]
 name = "discord-service"
 version = "0.1.0"
-source = { virtual = "components/discord_service" }
+source = { editable = "components/discord_service" }
 dependencies = [
+    { name = "chat-client-api" },
+    { name = "discord-client-impl" },
     { name = "fastapi" },
     { name = "uvicorn" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "chat-client-api", editable = "components/chat_client_api" },
+    { name = "discord-client-impl", editable = "components/discord_client_impl" },
     { name = "fastapi" },
     { name = "uvicorn" },
 ]
