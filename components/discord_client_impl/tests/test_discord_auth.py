@@ -9,6 +9,7 @@ import requests
 
 from discord_client_impl.auth import DiscordAuthenticator, DiscordOAuthHandler
 
+
 # ─── DiscordAuthenticator tests ───────────────────────────────────────────────
 def test_from_env_raises_when_token_missing(monkeypatch: pytest.MonkeyPatch) -> None:
     """Raises RuntimeError when DISCORD_BOT_TOKEN is not set."""
