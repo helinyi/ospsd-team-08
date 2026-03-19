@@ -2,7 +2,7 @@
 
 **Project:** `ospsd8-discord`
 **Region:** `us-east4`
-**Service URL:** `https://discord-service-wrjykcf2ia-uk.a.run.app`
+**Service URL:** `https://discord-service-122083288286.us-east4.run.app`
 
 ## Prerequisites
 
@@ -108,10 +108,10 @@ gcloud run services describe discord-service --region=us-east4 --project=ospsd8-
 
 # Update environment variables
 gcloud run services update discord-service --region=us-east4 --project=ospsd8-discord \
-  --set-env-vars "DISCORD_CLIENT_ID=xxx,DISCORD_CLIENT_SECRET=xxx,DISCORD_BOT_TOKEN=xxx,DISCORD_GUILD_ID=xxx,DISCORD_REDIRECT_URI=https://discord-service-wrjykcf2ia-uk.a.run.app/auth/callback"
+  --set-env-vars "DISCORD_CLIENT_ID=xxx,DISCORD_CLIENT_SECRET=xxx,DISCORD_BOT_TOKEN=xxx,DISCORD_GUILD_ID=xxx,DISCORD_REDIRECT_URI=https://discord-service-122083288286.us-east4.run.app/auth/callback"
 
 # Test health endpoint
-curl https://discord-service-wrjykcf2ia-uk.a.run.app/health
+curl https://discord-service-122083288286.us-east4.run.app/health
 ```
 
 ## Environment Variables
@@ -124,4 +124,4 @@ Set these via Cloud Run (Console or CLI) — never commit secrets to source cont
 | `DISCORD_CLIENT_SECRET` | Discord OAuth application client secret |
 | `DISCORD_BOT_TOKEN` | Discord bot token |
 | `DISCORD_GUILD_ID` | Target Discord guild (server) ID |
-| `DISCORD_REDIRECT_URI` | OAuth callback URL (`https://discord-service-wrjykcf2ia-uk.a.run.app/auth/callback`) |
+| `DISCORD_REDIRECT_URI` | OAuth callback URL (`https://discord-service-122083288286.us-east4.run.app/auth/callback`) |
