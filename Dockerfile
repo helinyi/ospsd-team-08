@@ -12,6 +12,7 @@ COPY pyproject.toml uv.lock ./
 COPY components/chat_client_api/ components/chat_client_api/
 COPY components/discord_client_impl/ components/discord_client_impl/
 COPY components/discord_service/ components/discord_service/
+COPY components/discord_service_api_client/ components/discord_service_api_client/
 
 # Install production dependencies only (no dev group)
 RUN uv sync --all-packages --no-dev --frozen
