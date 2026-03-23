@@ -130,3 +130,28 @@ def test_callback_exchange_error() -> None:
 
     assert response.status_code == 400
     assert response.json()["detail"] == "Invalid authorization code"
+
+
+def test_get_messages_success(mock_discord_client: MagicMock) -> None:
+    """Test successfully fetching messages for a channel."""
+    channel_id = "123"
+    chan = Channel(id=channel_id, name="general")
+    mock_discord_client.get_channels.return_value = [chan]
+
+    mock_messages = [
+        Message(
+            id="m1",
+            channel=chan,
+            sender="user1",
+            content="Hello",
+            timestamp=datetime.now(UTC),
+        )
+    ]
+    mock_discord_client.get_messages.return_value = mock_messages
+
+    response = client.get(f"/channels/{channel_id}/messages?limit=5")
+
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+    assert response.json()[0]["content"] == "Hello"
+    mock_discord_client.get_messages.assert_called_once_with(chan, limit=5)

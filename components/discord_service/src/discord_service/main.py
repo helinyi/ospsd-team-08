@@ -8,7 +8,7 @@ from chat_client_api.models import Channel, Message
 from discord_client_impl.auth import DiscordOAuthHandler
 from discord_client_impl.client import DiscordClient
 from dotenv import load_dotenv
-from fastapi import Body, Depends, FastAPI, HTTPException
+from fastapi import Body, Depends, FastAPI, HTTPException, Query
 from fastapi.responses import RedirectResponse
 
 load_dotenv()
@@ -98,6 +98,32 @@ async def send_channel_message(
 
     except RuntimeError as error:
         raise HTTPException(status_code=502, detail=f"Discord API error: {error}") from error
+
+
+@app.get("/channels/{channel_id}/messages")
+def get_channel_messages(
+    channel_id: str,
+    client: Annotated[DiscordClient, Depends(get_client)],
+    limit: Annotated[
+        int, Query(description="Number of messages to fetch", gt=0, le=100)
+    ] = 10,
+) -> list[Message]:
+    """
+    Retrieve recent messages from a specific channel.
+
+    Args:
+        channel_id: The ID of the Discord channel.
+        limit: The maximum number of messages to return (default 10, max 100).
+    """
+    channel_obj = _get_channel_by_id(channel_id, client)
+
+    try:
+        return client.get_messages(channel_obj, limit=limit)
+
+    except RuntimeError as error:
+        raise HTTPException(
+            status_code=502, detail=f"Discord API error: {error}"
+        ) from error
 
 
 if __name__ == "__main__":
