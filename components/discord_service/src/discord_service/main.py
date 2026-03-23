@@ -108,12 +108,13 @@ def get_channel_messages(
         int, Query(description="Number of messages to fetch", gt=0, le=100)
     ] = 10,
 ) -> list[Message]:
-    """
-    Retrieve recent messages from a specific channel.
+    """Retrieve recent messages from a specific channel.
 
     Args:
         channel_id: The ID of the Discord channel.
+        client: The DiscordClient instance to use for API calls.
         limit: The maximum number of messages to return (default 10, max 100).
+
     """
     channel_obj = _get_channel_by_id(channel_id, client)
 
