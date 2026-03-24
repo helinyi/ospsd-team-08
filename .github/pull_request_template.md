@@ -26,9 +26,19 @@ Please select the relevant option(s):
 
 Main updates in this PR:
 
-*
-*
-*
+### Cloud Deployment (helinyi)
+* Deployed FastAPI service to Google Cloud Run (`https://discord-service-122083288286.us-east4.run.app`)
+* Created `Dockerfile`, `.dockerignore`, and `cloudbuild.yaml` for containerized deployment
+* Set up Cloud Build trigger — auto-deploys on every push to `hw-2` from GitHub
+* Configured GCP project `ospsd8-discord` (IAM roles, Secret Manager, Artifact Registry)
+* Environment variables stored securely via Cloud Run secrets — not in source control
+* See [CLOUDRUN.md](../CLOUDRUN.md) for full setup details
+
+### Auto-Generated Client (helinyi)
+* Generated `discord_service_api_client` using `openapi-python-client` from deployed service's `/openapi.json`
+* Type-safe Python client for all endpoints: health, auth, channels, messages
+* Integrated into `uv` workspace with `hatchling` build backend
+* See [component README](../components/discord_service_api_client/README.md) for usage
 
 ---
 
@@ -44,7 +54,12 @@ Examples:
 * Logs
 
 ```
-Paste screenshots, outputs, or links here
+$ curl https://discord-service-122083288286.us-east4.run.app/health
+{"status":"ok"}
+
+CircleCI Pipeline #67: lint ✓ test ✓
+Cloud Build: auto-deploy from GitHub trigger working
+OpenAPI spec: https://discord-service-122083288286.us-east4.run.app/openapi.json
 ```
 
 ---
