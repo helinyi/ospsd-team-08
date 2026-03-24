@@ -55,6 +55,7 @@ ignore = [
     "PLC0415",
 ]
 "**/tests/**" = ["D", "ANN", "PLR2004", "PLW0108", "I001"]
+"**/discord_service_api_client/**" = ["ALL"]  # auto-generated code, not manually maintained
 "**/test_*.py" = ["D", "ANN", "PLR2004", "PLW0108", "I001", "S101", "SLF001", "ARG001", "ARG002", "INP001", "PLC0415"]
 
 [tool.mypy]

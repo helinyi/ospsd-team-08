@@ -25,7 +25,7 @@ openapi-python-client generate \
 
 ## Re-generating
 
-If the FastAPI service endpoints change, re-run the generate command above with `--overwrite` and then restore the `[project]` table in `pyproject.toml` (the generator outputs a poetry-only config).
+If the FastAPI service endpoints change, re-run the generate command above with `--overwrite`, then restore the `pyproject.toml` (the generator outputs a poetry config — we use hatchling) and this `README.md`.
 
 ## Usage
 
@@ -33,6 +33,7 @@ If the FastAPI service endpoints change, re-run the generate command above with 
 from fast_api_client import Client
 from fast_api_client.api.default import (
     get_channels_channels_get,
+    get_channel_messages_channels_channel_id_messages_get,
     health_health_get,
     send_channel_message_channels_channel_id_messages_post,
 )
@@ -45,6 +46,13 @@ with client as c:
 
     # Get channels
     channels = get_channels_channels_get.sync(client=c)
+
+    # Get messages from a channel
+    messages = get_channel_messages_channels_channel_id_messages_get.sync(
+        channel_id="123456",
+        client=c,
+        limit=10,
+    )
 
     # Send a message
     from fast_api_client.models import BodySendChannelMessageChannelsChannelIdMessagesPost
@@ -82,6 +90,7 @@ Each endpoint has four variants:
 | `login_auth_login_get` | `GET /auth/login` |
 | `auth_callback_auth_callback_get` | `GET /auth/callback` |
 | `get_channels_channels_get` | `GET /channels` |
+| `get_channel_messages_channels_channel_id_messages_get` | `GET /channels/{channel_id}/messages` |
 | `send_channel_message_channels_channel_id_messages_post` | `POST /channels/{channel_id}/messages` |
 
 All endpoint modules are under `fast_api_client.api.default`.
