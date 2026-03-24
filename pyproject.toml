@@ -67,6 +67,10 @@ mypy_path = [
     "components/discord_service/src",
 ]
 
+[[tool.mypy.overrides]]
+module = "fast_api_client.*"
+ignore_errors = true
+
 [tool.pytest.ini_options]
 minversion = "8.0"
 testpaths = ["tests", "components"]
