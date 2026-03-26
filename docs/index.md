@@ -1,17 +1,13 @@
-# Welcome to the Chat Client Template
-
-# Chat Client
-
-Welcome to the Chat Client documentation.
-
 ## Overview
 
-This project implements a modular chat client architecture consisting of:
+This project implements a modular chat client system with Discord integration.
 
-- `chat_client_api` — defines the abstract chat interface and data models.
-- `discord_client_impl` — provides a Discord-based implementation of the interface.
+It includes:
 
-The system uses a simple factory-based dependency injection pattern.
+- `chat_client_api` — defines the chat interface  
+- `discord_client_impl` — implements the interface using Discord API  
+- `discord_service` — exposes functionality as a FastAPI service  
+- `discord_service_api_client` — generated client from OpenAPI  
 
 ---
 
@@ -20,3 +16,6 @@ The system uses a simple factory-based dependency injection pattern.
 - [Getting Started](getting-started.md)
 - [API Reference](api-reference.md)
 - [Discord Implementation](discord-implementation.md)
+- [Discord Service](discord-service.md)
+- [Service API Client](discord-service-api-client.md)
+- [Design Document](design-docoment-hw2.md)

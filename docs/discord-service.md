@@ -1,17 +1,8 @@
 # Discord Service
 
-## Getting started
-Build the discord service with:
-```
-uv sync --all-packages
-```
+`discord_service` is the HW2 FastAPI deployment unit.
 
-Then start the API endpoints with:
-```
-uv run uvicorn discord_service.main:app --reload
-```
-
-## Endpoints
+## Current Endpoints
 
 - `GET /health`
 - `GET /auth/login`
@@ -27,7 +18,7 @@ uv run uvicorn discord_service.main:app --reload
   - Response: `{"status": "ok"}`
 
 - `/auth/login`
-  - Redirects user to Discord OAuth authorization page
+  - Redirects the user to Discord OAuth authorization URL
 
 - `/auth/callback`
   - Exchanges authorization code for access token
@@ -40,10 +31,10 @@ uv run uvicorn discord_service.main:app --reload
     ```
 
 - `/channels`
-  - Returns list of channels from Discord
+  - Returns a list of channels from the Discord client
 
 - `/channels/{channel_id}/messages` (POST)
-  - Sends a message to a channel
+  - Sends a message to a specific channel
   - Request body:
     ```json
     {
@@ -52,25 +43,29 @@ uv run uvicorn discord_service.main:app --reload
     ```
 
 - `/channels/{channel_id}/messages` (GET)
-  - Retrieves recent messages
+  - Retrieves recent messages from a channel
   - Query parameter:
     - `limit` (default 10, max 100)
 
 ## Dependency Injection
 
+The service uses FastAPI dependency injection:
+
 - `get_client()` provides a `DiscordClient`
 - `get_oauth_handler()` provides a `DiscordOAuthHandler`
+
+This allows tests to override dependencies and mock external API behavior.
 
 ## Error Handling
 
 - Invalid channel → `404 Not Found`
 - OAuth exchange failure → `400 Bad Request`
 - Discord API/runtime failure → `502 Bad Gateway`
-- Missing parameters → `422 Unprocessable Entity`
+- Missing required parameters → `422 Unprocessable Entity`
 
 ## Notes
 
-- Uses FastAPI as the service layer
-- OAuth 2.0 Authorization Code Flow is implemented
-- All endpoints are backed by real Discord API calls
-- OpenAPI spec available at `/openapi.json`
+- OAuth flow is fully implemented using Authorization Code Flow
+- All endpoints are backed by the real Discord API via `DiscordClient`
+- Service is designed to be deployed and accessed remotely
+- OpenAPI specification is available at `/openapi.json`
