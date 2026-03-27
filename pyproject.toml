@@ -8,6 +8,7 @@ dependencies = [
     "dotenv>=0.9.9",
     "fastapi>=0.135.1",
     "httpx>=0.28.1",
+    "itsdangerous>=2.2.0",
     "requests>=2.32.5",
     "uvicorn>=0.42.0",
 ]
@@ -45,6 +46,9 @@ ignore = [
     "D",
     "ANN",
     "PLR2004",
+    "D",
+    "ANN",
+    "PLR2004",
     "PLW0108",
     "I001",
     "S101",
@@ -65,6 +69,7 @@ mypy_path = [
     "components/chat_client_api/src",
     "components/discord_client_impl/src",
     "components/discord_service/src",
+    "components/discord_service/src",
 ]
 
 [[tool.mypy.overrides]]
@@ -74,11 +79,13 @@ ignore_errors = true
 [tool.pytest.ini_options]
 minversion = "8.0"
 testpaths = ["tests", "components"]
+testpaths = ["tests", "components"]
 addopts = "-v --tb=short"
 env_files = [".env"]
 pythonpath = [
     "components/chat_client_api/src",
     "components/discord_client_impl/src",
+    "components/discord_service/src",
     "components/discord_service/src",
 ]
 markers = [
@@ -93,6 +100,7 @@ source = ["components"]
 omit = ["*/tests/*", "*/test_*.py"]
 
 [tool.coverage.report]
+fail_under = 90
 precision = 2
 show_missing = true
 skip_covered = false

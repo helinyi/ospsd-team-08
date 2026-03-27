@@ -30,7 +30,7 @@ def get_client() -> ChatClient:
         RuntimeError: If no implementation has been registered.
 
     """
-    if _client_factory is None:
+    if _client_factory is None: # pragma: no cover
         msg = "No ChatClient implementation registered."
         raise RuntimeError(msg)
     return _client_factory()

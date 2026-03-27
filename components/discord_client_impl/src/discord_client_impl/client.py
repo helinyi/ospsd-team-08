@@ -9,7 +9,7 @@ import requests
 from chat_client_api.client import ChatClient
 from chat_client_api.models import Channel, Message
 
-from discord_client_impl.auth import DiscordAuthenticator
+from discord_client_impl.auth import DiscordAuthenticator, DiscordOAuthHandler
 
 
 class DiscordClient(ChatClient):
@@ -17,14 +17,24 @@ class DiscordClient(ChatClient):
 
     _DISCORD_API_BASE = "https://discord.com/api/v10"
 
-    def __init__(self, authenticator: DiscordAuthenticator | None = None) -> None:
+    def __init__(
+        self,
+        authenticator: DiscordAuthenticator | None = None,
+        access_token: str | None = None,
+    ) -> None:
         """Initialize the Discord client.
 
         Args:
             authenticator: Optional authenticator. If not provided, loads from env.
+            access_token: Optional access token. If provided, used for authentication.
 
         """
-        self._auth = authenticator or DiscordAuthenticator.from_env()
+        if access_token:
+            self._headers = DiscordOAuthHandler.get_oauth_headers(access_token)
+        else:
+            self._auth = authenticator or DiscordAuthenticator.from_env()
+            self._headers = self._auth.get_headers()
+
         guild_id = os.getenv("DISCORD_GUILD_ID")
         if not guild_id:
             msg = "Missing required environment variable: DISCORD_GUILD_ID"
@@ -43,7 +53,7 @@ class DiscordClient(ChatClient):
         """
         url = f"{self._DISCORD_API_BASE}/guilds/{self._guild_id}/channels"
         try:
-            response = requests.get(url, headers=self._auth.get_headers(), timeout=10)
+            response = requests.get(url, headers=self._headers, timeout=10)
         except requests.RequestException as exc:
             msg = f"Failed to fetch channels: {exc}"
             raise RuntimeError(msg) from exc
@@ -81,7 +91,7 @@ class DiscordClient(ChatClient):
         try:
             response = requests.get(
                 url,
-                headers=self._auth.get_headers(),
+                headers=self._headers,
                 params=params,
                 timeout=10,
             )
@@ -131,7 +141,7 @@ class DiscordClient(ChatClient):
         try:
             response = requests.post(
                 url,
-                headers=self._auth.get_headers(),
+                headers=self._headers,
                 json=payload,
                 timeout=10,
             )

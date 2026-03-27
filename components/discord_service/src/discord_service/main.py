@@ -1,20 +1,25 @@
 """The endpoints for the Discord service."""
+from __future__ import annotations
 
 import os
 from typing import Annotated
 
+import requests
 import uvicorn
-from chat_client_api.models import Channel, Message
+from chat_client_api.models import Channel, Message  # noqa: TC002
 from discord_client_impl.auth import DiscordOAuthHandler
 from discord_client_impl.client import DiscordClient
 from dotenv import load_dotenv
-from fastapi import Body, Depends, FastAPI, HTTPException, Query
+from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
+from starlette.middleware.sessions import SessionMiddleware
 
 load_dotenv()
 
 app = FastAPI()
 
+secret_key = os.environ.get("SESSION_SECRET_KEY", "dev-secret-key")
+app.add_middleware(SessionMiddleware, secret_key=secret_key)
 
 def get_client() -> DiscordClient:  # pragma: no cover
     """Create a DiscordClient instance."""
@@ -43,6 +48,7 @@ def login(
 @app.get("/auth/callback")
 def auth_callback(
     code: str,
+    request: Request,
     oauth: Annotated[DiscordOAuthHandler, Depends(get_oauth_handler)],
 ) -> dict[str, str]:
     """Exchanges the authorization code for an access token."""
@@ -50,9 +56,44 @@ def auth_callback(
         token = oauth.exchange_code(code)
     except RuntimeError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
-    else:
-        return {"access_token": token, "token_type": "Bearer"}
+    request.session["access_token"] = token
+    return {"access_token": token, "token_type": "Bearer"}
 
+@app.get("/users/me")
+def get_current_user(request: Request) -> dict[str, str]:
+    """Return the currently authenticated Discord user.
+
+    Requires the user to have logged in via /auth/login first.
+
+    Raises:
+        HTTPException: If the user is not authenticated or the API call fails.
+
+    """
+    access_token = request.session.get("access_token")
+    if not access_token:
+        raise HTTPException(
+            status_code=401,
+            detail="Not authenticated. Visit /auth/login first.",
+        )
+    try:
+        response = requests.get(
+            "https://discord.com/api/v10/users/@me",
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=10,
+        )
+    except requests.RequestException as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    if not response.ok:
+        raise HTTPException(
+            status_code=response.status_code,
+            detail="Failed to fetch user info from Discord.",
+        )
+    data: dict[str, str] = response.json()
+    return {
+        "id": data.get("id", ""),
+        "username": data.get("username", ""),
+        "discriminator": data.get("discriminator", ""),
+    }
 
 @app.get("/channels")
 def get_channels(
