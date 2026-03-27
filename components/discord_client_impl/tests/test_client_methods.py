@@ -234,3 +234,11 @@ def test_send_message_raises_on_network_error(
         pytest.raises(RuntimeError, match="network error"),
     ):
         client.send_message(channel, "hi")
+
+def test_client_uses_oauth_token_when_provided(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """DiscordClient uses OAuth headers when access_token is provided."""
+    monkeypatch.setenv("DISCORD_GUILD_ID", "123456789")
+    client = DiscordClient(access_token="test-oauth-token")  # noqa: S106
+    assert client._headers["Authorization"] == "Bearer test-oauth-token"

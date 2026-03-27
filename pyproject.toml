@@ -8,6 +8,7 @@ dependencies = [
     "dotenv>=0.9.9",
     "fastapi>=0.135.1",
     "httpx>=0.28.1",
+    "itsdangerous>=2.2.0",
     "requests>=2.32.5",
     "uvicorn>=0.42.0",
 ]
@@ -88,6 +89,7 @@ source = ["components"]
 omit = ["*/tests/*", "*/test_*.py"]
 
 [tool.coverage.report]
+fail_under = 90
 precision = 2
 show_missing = true
 skip_covered = false

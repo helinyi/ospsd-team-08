@@ -4,6 +4,9 @@ version = "0.1.0"
 dependencies = [
     "fastapi",
     "uvicorn",
+    "python-dotenv",
+    "itsdangerous",
+    "starlette",
     "chat-client-api",
     "discord-client-impl",
 ]
