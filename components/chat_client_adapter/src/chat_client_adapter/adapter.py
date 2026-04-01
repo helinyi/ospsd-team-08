@@ -26,6 +26,7 @@ from discord_service_api_client.fast_api_client.models.http_validation_error imp
 from discord_service_api_client.fast_api_client.models.message import (
     Message as GeneratedMessage,
 )
+from discord_service_api_client.fast_api_client.types import UNSET
 
 
 class ChatClientAdapter(ChatClient):
@@ -81,7 +82,7 @@ class ChatClientAdapter(ChatClient):
     @staticmethod
     def _to_api_channel(channel: GeneratedChannel) -> ApiChannel:
         """Convert a generated service Channel into an API Channel."""
-        topic = None if channel.topic is None else channel.topic
+        topic = None if channel.topic is None or channel.topic is UNSET else channel.topic
         return ApiChannel(
             id=channel.id,
             name=channel.name,
