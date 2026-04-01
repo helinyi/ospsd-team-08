@@ -93,7 +93,6 @@ class ChatClientAdapter(ChatClient):
     def _to_api_channel(channel: GeneratedChannel) -> ApiChannel:
         """Convert a generated service Channel into an API Channel."""
         topic = None if channel.topic is None or isinstance(channel.topic, Unset) else channel.topic
-            
         return ApiChannel(
             id=channel.id,
             name=channel.name,
