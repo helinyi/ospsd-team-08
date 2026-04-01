@@ -6,7 +6,7 @@ requires-python = ">=3.12"
 
 dependencies = [
     "chat-client-api",
-    "discord-service-api-client",
+    "fast-api-client",
 ]
 
 [tool.setuptools.packages.find]
