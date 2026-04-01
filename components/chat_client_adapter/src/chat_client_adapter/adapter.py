@@ -23,7 +23,7 @@ from fast_api_client.models.body_send_channel_message_channels_channel_id_messag
 from fast_api_client.models.http_validation_error import (
     HTTPValidationError,
 )
-from fast_api_client.types import UNSET
+from fast_api_client.types import Unset
 
 if TYPE_CHECKING:
     from fast_api_client.models.channel import (
@@ -92,7 +92,12 @@ class ChatClientAdapter(ChatClient):
     @staticmethod
     def _to_api_channel(channel: GeneratedChannel) -> ApiChannel:
         """Convert a generated service Channel into an API Channel."""
-        topic = None if channel.topic is UNSET or channel.topic is None else channel.topic
+        topic: str | None
+        if channel.topic is None or isinstance(channel.topic, Unset):
+            topic = None
+        else:
+            topic = channel.topic
+            
         return ApiChannel(
             id=channel.id,
             name=channel.name,
