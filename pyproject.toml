@@ -28,7 +28,7 @@ members = ["components/*"]
 
 [tool.uv.sources]
 chat-client-api = { workspace = true }
-discord-service-api-client = { workspace = true }
+fast-api-client = { workspace = true }
 chat-client-adapter = { workspace = true }
 
 # ruff configuration borrowed from https://github.com/nyu/oss-taapp-example/blob/root/pyproject.toml
