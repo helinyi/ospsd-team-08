@@ -1,0 +1,13 @@
+[project]
+name = "chat-client-adapter"
+version = "0.1.0"
+description = "Adapter for ChatClient using Discord service API client"
+requires-python = ">=3.12"
+
+dependencies = [
+    "chat-client-api",
+    "discord-service-api-client",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
