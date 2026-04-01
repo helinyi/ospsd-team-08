@@ -65,7 +65,7 @@ class ChatClientAdapter(ChatClient):
 
         if isinstance(response, HTTPValidationError):
             msg = "Service rejected get_messages request."
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         return [self._to_api_message(message) for message in response]
 
@@ -85,7 +85,7 @@ class ChatClientAdapter(ChatClient):
 
         if isinstance(response, HTTPValidationError):
             msg = "Service rejected send_message request."
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         return self._to_api_message(response)
 
