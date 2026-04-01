@@ -158,7 +158,7 @@ def test_get_messages_raises_on_validation_error() -> None:
             "chat_client_adapter.adapter.get_messages_sync",
             return_value=validation_error,
         ),
-        pytest.raises(ValueError, match="Service rejected get_messages request"),
+        pytest.raises(TypeError, match="Service rejected get_messages request"),
     ):
         adapter.get_messages(api_channel)
 
@@ -226,6 +226,6 @@ def test_send_message_raises_on_validation_error() -> None:
             "chat_client_adapter.adapter.send_message_sync",
             return_value=validation_error,
         ),
-        pytest.raises(ValueError, match="Service rejected send_message request"),
+        pytest.raises(TypeError, match="Service rejected send_message request"),
     ):
         adapter.send_message(api_channel, "hello")
