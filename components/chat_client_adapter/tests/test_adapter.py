@@ -69,16 +69,17 @@ def test_get_channels_returns_api_channels() -> None:
         ApiChannel(id="2", name="random", topic=None),
     ]
 
-
 def test_get_channels_raises_when_response_is_none() -> None:
     adapter = ChatClientAdapter(base_url="http://example.com")
 
-    with patch(
-        "chat_client_adapter.adapter.get_channels_sync",
-        return_value=None,
+    with (
+        patch(
+            "chat_client_adapter.adapter.get_channels_sync",
+            return_value=None,
+        ),
+        pytest.raises(RuntimeError, match="Failed to fetch channels"),
     ):
-        with pytest.raises(RuntimeError, match="Failed to fetch channels"):
-            adapter.get_channels()
+        adapter.get_channels()
 
 
 def test_get_messages_returns_api_messages() -> None:
@@ -137,12 +138,14 @@ def test_get_messages_raises_when_response_is_none() -> None:
     adapter = ChatClientAdapter(base_url="http://example.com")
     api_channel = ApiChannel(id="123", name="general")
 
-    with patch(
-        "chat_client_adapter.adapter.get_messages_sync",
-        return_value=None,
+    with (
+        patch(
+            "chat_client_adapter.adapter.get_messages_sync",
+            return_value=None,
+        ),
+        pytest.raises(RuntimeError, match="Failed to fetch messages"),
     ):
-        with pytest.raises(RuntimeError, match="Failed to fetch messages"):
-            adapter.get_messages(api_channel)
+        adapter.get_messages(api_channel)
 
 
 def test_get_messages_raises_on_validation_error() -> None:
@@ -150,12 +153,14 @@ def test_get_messages_raises_on_validation_error() -> None:
     api_channel = ApiChannel(id="123", name="general")
     validation_error = HTTPValidationError(detail=[])
 
-    with patch(
-        "chat_client_adapter.adapter.get_messages_sync",
-        return_value=validation_error,
+    with (
+        patch(
+            "chat_client_adapter.adapter.get_messages_sync",
+            return_value=validation_error,
+        ),
+        pytest.raises(ValueError, match="Service rejected get_messages request"),
     ):
-        with pytest.raises(RuntimeError, match="Service rejected get_messages request"):
-            adapter.get_messages(api_channel)
+        adapter.get_messages(api_channel)
 
 
 def test_send_message_returns_api_message() -> None:
@@ -201,12 +206,14 @@ def test_send_message_raises_when_response_is_none() -> None:
     adapter = ChatClientAdapter(base_url="http://example.com")
     api_channel = ApiChannel(id="123", name="general")
 
-    with patch(
-        "chat_client_adapter.adapter.send_message_sync",
-        return_value=None,
+    with (
+        patch(
+            "chat_client_adapter.adapter.send_message_sync",
+            return_value=None,
+        ),
+        pytest.raises(RuntimeError, match="Failed to send message"),
     ):
-        with pytest.raises(RuntimeError, match="Failed to send message"):
-            adapter.send_message(api_channel, "hello")
+        adapter.send_message(api_channel, "hello")
 
 
 def test_send_message_raises_on_validation_error() -> None:
@@ -214,9 +221,11 @@ def test_send_message_raises_on_validation_error() -> None:
     api_channel = ApiChannel(id="123", name="general")
     validation_error = HTTPValidationError(detail=[])
 
-    with patch(
-        "chat_client_adapter.adapter.send_message_sync",
-        return_value=validation_error,
+    with (
+        patch(
+            "chat_client_adapter.adapter.send_message_sync",
+            return_value=validation_error,
+        ),
+        pytest.raises(ValueError, match="Service rejected send_message request"),
     ):
-        with pytest.raises(RuntimeError, match="Service rejected send_message request"):
-            adapter.send_message(api_channel, "hello")
+        adapter.send_message(api_channel, "hello")
