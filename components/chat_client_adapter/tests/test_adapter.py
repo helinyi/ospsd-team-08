@@ -8,16 +8,16 @@ import pytest
 from chat_client_api.models import Channel as ApiChannel
 from chat_client_api.models import Message as ApiMessage
 from chat_client_adapter.adapter import ChatClientAdapter
-from discord_service_api_client.fast_api_client.models.body_send_channel_message_channels_channel_id_messages_post import (
+from fast_api_client.models.body_send_channel_message_channels_channel_id_messages_post import (
     BodySendChannelMessageChannelsChannelIdMessagesPost,
 )
-from discord_service_api_client.fast_api_client.models.channel import (
+from fast_api_client.models.channel import (
     Channel as GeneratedChannel,
 )
-from discord_service_api_client.fast_api_client.models.http_validation_error import (
+from fast_api_client.models.http_validation_error import (
     HTTPValidationError,
 )
-from discord_service_api_client.fast_api_client.models.message import (
+from fast_api_client.models.message import (
     Message as GeneratedMessage,
 )
 
