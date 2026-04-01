@@ -84,6 +84,7 @@ Example response from:
 -   GET /health\
 -   GET /auth/login\
 -   GET /auth/callback\
+-   GET /users/me\
 -   GET /channels\
 -   GET /channels/{channel_id}/messages\
 -   POST /channels/{channel_id}/messages
