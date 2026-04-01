@@ -1,7 +1,7 @@
 
 ---
 
-# 📄 design.md
+# 📄 design-hw1.md
 
 ```markdown
 # Design Document
