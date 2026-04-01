@@ -1,32 +1,37 @@
+"""Adapter implementation for the chat client service."""
+
 from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from chat_client_api.client import ChatClient
 from chat_client_api.models import Channel as ApiChannel
 from chat_client_api.models import Message as ApiMessage
-
-from discord_service_api_client.fast_api_client.client import Client
-from discord_service_api_client.fast_api_client.api.default.get_channels_channels_get import (
-    sync as get_channels_sync,
-)
 from discord_service_api_client.fast_api_client.api.default.get_channel_messages_channels_channel_id_messages_get import (
     sync as get_messages_sync,
+)
+from discord_service_api_client.fast_api_client.api.default.get_channels_channels_get import (
+    sync as get_channels_sync,
 )
 from discord_service_api_client.fast_api_client.api.default.send_channel_message_channels_channel_id_messages_post import (
     sync as send_message_sync,
 )
+from discord_service_api_client.fast_api_client.client import Client
 from discord_service_api_client.fast_api_client.models.body_send_channel_message_channels_channel_id_messages_post import (
     BodySendChannelMessageChannelsChannelIdMessagesPost,
-)
-from discord_service_api_client.fast_api_client.models.channel import (
-    Channel as GeneratedChannel,
 )
 from discord_service_api_client.fast_api_client.models.http_validation_error import (
     HTTPValidationError,
 )
-from discord_service_api_client.fast_api_client.models.message import (
-    Message as GeneratedMessage,
-)
 from discord_service_api_client.fast_api_client.types import UNSET
+
+if TYPE_CHECKING:
+    from discord_service_api_client.fast_api_client.models.channel import (
+        Channel as GeneratedChannel,
+    )
+    from discord_service_api_client.fast_api_client.models.message import (
+        Message as GeneratedMessage,
+    )
 
 
 class ChatClientAdapter(ChatClient):
@@ -41,7 +46,8 @@ class ChatClientAdapter(ChatClient):
         response = get_channels_sync(client=self._client)
 
         if response is None:
-            raise RuntimeError("Failed to fetch channels from the service.")
+            msg = "Failed to fetch channels from the service."
+            raise RuntimeError(msg)
 
         return [self._to_api_channel(channel) for channel in response]
 
@@ -54,10 +60,12 @@ class ChatClientAdapter(ChatClient):
         )
 
         if response is None:
-            raise RuntimeError("Failed to fetch messages from the service.")
+            msg = "Failed to fetch messages from the service."
+            raise RuntimeError(msg)
 
         if isinstance(response, HTTPValidationError):
-            raise RuntimeError("Service rejected get_messages request.")
+            msg = "Service rejected get_messages request."
+            raise ValueError(msg)
 
         return [self._to_api_message(message) for message in response]
 
@@ -72,17 +80,19 @@ class ChatClientAdapter(ChatClient):
         )
 
         if response is None:
-            raise RuntimeError("Failed to send message through the service.")
+            msg = "Failed to send message through the service."
+            raise RuntimeError(msg)
 
         if isinstance(response, HTTPValidationError):
-            raise RuntimeError("Service rejected send_message request.")
+            msg = "Service rejected send_message request."
+            raise ValueError(msg)
 
         return self._to_api_message(response)
 
     @staticmethod
     def _to_api_channel(channel: GeneratedChannel) -> ApiChannel:
         """Convert a generated service Channel into an API Channel."""
-        topic = None if channel.topic is None or channel.topic is UNSET else channel.topic
+        topic = None if channel.topic is UNSET or channel.topic is None else channel.topic
         return ApiChannel(
             id=channel.id,
             name=channel.name,
