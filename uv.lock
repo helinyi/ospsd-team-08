@@ -285,6 +285,7 @@ dependencies = [
     { name = "fastapi" },
     { name = "itsdangerous" },
     { name = "python-dotenv" },
+    { name = "requests" },
     { name = "starlette" },
     { name = "uvicorn" },
 ]
@@ -296,6 +297,7 @@ requires-dist = [
     { name = "fastapi" },
     { name = "itsdangerous" },
     { name = "python-dotenv" },
+    { name = "requests" },
     { name = "starlette" },
     { name = "uvicorn" },
 ]

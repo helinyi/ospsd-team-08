@@ -7,6 +7,7 @@ dependencies = [
     "python-dotenv",
     "itsdangerous", 
     "starlette",
+    "requests",
     "chat-client-api",
     "discord-client-impl",
 ]
