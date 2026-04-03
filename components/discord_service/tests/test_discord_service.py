@@ -108,8 +108,7 @@ def test_callback_success() -> None:
 
     assert response.status_code == 200
     assert response.json() == {
-        "access_token": fake_token,
-        "token_type": "Bearer",
+        "message": "Authentication successful"
     }
 
 

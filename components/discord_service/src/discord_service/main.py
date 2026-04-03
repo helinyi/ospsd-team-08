@@ -4,11 +4,13 @@ from __future__ import annotations
 import os
 from typing import Annotated
 
+import discord_client_impl  # noqa: F401
 import requests
 import uvicorn
+from chat_client_api import get_client as get_chat_client
+from chat_client_api.client import ChatClient  # noqa: TC002
 from chat_client_api.models import Channel, Message  # noqa: TC002
 from discord_client_impl.auth import DiscordOAuthHandler
-from discord_client_impl.client import DiscordClient
 from dotenv import load_dotenv
 from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
@@ -21,9 +23,9 @@ app = FastAPI()
 secret_key = os.environ.get("SESSION_SECRET_KEY", "dev-secret-key")
 app.add_middleware(SessionMiddleware, secret_key=secret_key)
 
-def get_client() -> DiscordClient:  # pragma: no cover
-    """Create a DiscordClient instance."""
-    return DiscordClient()
+def get_client() -> ChatClient:  # pragma: no cover
+    """Create a ChatClient instance via dependency injection."""
+    return get_chat_client()
 
 
 def get_oauth_handler() -> DiscordOAuthHandler:
@@ -57,7 +59,7 @@ def auth_callback(
     except RuntimeError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
     request.session["access_token"] = token
-    return {"access_token": token, "token_type": "Bearer"}
+    return {"message": "Authentication successful"}
 
 @app.get("/users/me")
 def get_current_user(request: Request) -> dict[str, str]:
@@ -97,14 +99,14 @@ def get_current_user(request: Request) -> dict[str, str]:
 
 @app.get("/channels")
 def get_channels(
-    client: Annotated[DiscordClient, Depends(get_client)],
+    client: Annotated[ChatClient, Depends(get_client)],
 ) -> list[Channel]:
     """Return the channels."""
     return client.get_channels()
 
 
 def _get_channel_by_id(
-    channel_id: str, client: Annotated[DiscordClient, Depends(get_client)]
+    channel_id: str, client: ChatClient
 ) -> Channel:
     """Resolve a string ID into a Channel object reference."""
     channels = client.get_channels()
@@ -120,7 +122,7 @@ def _get_channel_by_id(
 
 @app.post("/channels/{channel_id}/messages")
 async def send_channel_message(
-    client: Annotated[DiscordClient, Depends(get_client)],
+    client: Annotated[ChatClient, Depends(get_client)],
     channel_id: str,
     content: Annotated[str, Body(embed=True)],
 ) -> Message:
@@ -144,7 +146,7 @@ async def send_channel_message(
 @app.get("/channels/{channel_id}/messages")
 def get_channel_messages(
     channel_id: str,
-    client: Annotated[DiscordClient, Depends(get_client)],
+    client: Annotated[ChatClient, Depends(get_client)],
     limit: Annotated[
         int, Query(description="Number of messages to fetch", gt=0, le=100)
     ] = 10,
