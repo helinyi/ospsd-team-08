@@ -35,22 +35,28 @@ jobs:
           name: Install dependencies
           command: uv sync --all-packages --group dev
       - run:
+          name: Run unit tests
+          command: |
+            mkdir -p test-results/unit
+            uv run pytest components/discord_client_impl/tests/ \
+              components/chat_client_api/tests/ \
+              components/discord_service/tests/ \
+              components/chat_client_adapter/tests/ \
+              --junitxml=test-results/unit/results.xml \
+              --cov=discord_client_impl \
+              --cov=chat_client_api \
+              --cov=discord_service \
+              --cov=chat_client_adapter \
+              --cov-report=xml:coverage.xml \
+              --cov-report=html:htmlcov
+      - run:
           name: Run integration & e2e tests
           command: |
             mkdir -p test-results/integration
             uv run pytest tests/ \
               --junitxml=test-results/integration/results.xml \
-              --cov=components \
-              --cov-report=xml:coverage.xml
-          environment:
-            DISCORD_BOT_TOKEN: $DISCORD_BOT_TOKEN
-      - run:
-          name: Run unit tests
-          command: |
-            mkdir -p test-results/unit
-            uv run pytest components/discord_client_impl/tests/ \
-              --junitxml=test-results/unit/results.xml \
-              --cov=components \
+              --cov=discord_client_impl \
+              --cov=chat_client_api \
               --cov-append \
               --cov-report=xml:coverage.xml \
               --cov-report=html:htmlcov

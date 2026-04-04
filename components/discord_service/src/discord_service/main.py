@@ -1,0 +1,177 @@
+"""The endpoints for the Discord service."""
+from __future__ import annotations
+
+import os
+from typing import Annotated
+
+import discord_client_impl  # noqa: F401
+import requests
+import uvicorn
+from chat_client_api import get_client as get_chat_client
+from chat_client_api.client import ChatClient  # noqa: TC002
+from chat_client_api.models import Channel, Message  # noqa: TC002
+from discord_client_impl.auth import DiscordOAuthHandler
+from dotenv import load_dotenv
+from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request
+from fastapi.responses import RedirectResponse
+from starlette.middleware.sessions import SessionMiddleware
+
+load_dotenv()
+
+app = FastAPI()
+
+secret_key = os.environ.get("SESSION_SECRET_KEY", "dev-secret-key")
+app.add_middleware(SessionMiddleware, secret_key=secret_key)
+
+def get_client() -> ChatClient:  # pragma: no cover
+    """Create a ChatClient instance via dependency injection."""
+    return get_chat_client()
+
+
+def get_oauth_handler() -> DiscordOAuthHandler:
+    """Dependency for OAuth flow management."""
+    return DiscordOAuthHandler.from_env()
+
+
+@app.get("/health")
+def health() -> dict[str, str]:
+    """Health check endpoint."""
+    return {"status": "ok"}
+
+
+@app.get("/auth/login")
+def login(
+    oauth: Annotated[DiscordOAuthHandler, Depends(get_oauth_handler)],
+) -> RedirectResponse:
+    """Redirects the user to Discord's authorization page."""
+    return RedirectResponse(oauth.get_authorization_url())
+
+
+@app.get("/auth/callback")
+def auth_callback(
+    code: str,
+    request: Request,
+    oauth: Annotated[DiscordOAuthHandler, Depends(get_oauth_handler)],
+) -> dict[str, str]:
+    """Exchanges the authorization code for an access token."""
+    try:
+        token = oauth.exchange_code(code)
+    except RuntimeError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    request.session["access_token"] = token
+    return {"message": "Authentication successful"}
+
+@app.get("/users/me")
+def get_current_user(request: Request) -> dict[str, str]:
+    """Return the currently authenticated Discord user.
+
+    Requires the user to have logged in via /auth/login first.
+
+    Raises:
+        HTTPException: If the user is not authenticated or the API call fails.
+
+    """
+    access_token = request.session.get("access_token")
+    if not access_token:
+        raise HTTPException(
+            status_code=401,
+            detail="Not authenticated. Visit /auth/login first.",
+        )
+    try:
+        response = requests.get(
+            "https://discord.com/api/v10/users/@me",
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=10,
+        )
+    except requests.RequestException as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    if not response.ok:
+        raise HTTPException(
+            status_code=response.status_code,
+            detail="Failed to fetch user info from Discord.",
+        )
+    data: dict[str, str] = response.json()
+    return {
+        "id": data.get("id", ""),
+        "username": data.get("username", ""),
+        "discriminator": data.get("discriminator", ""),
+    }
+
+@app.get("/channels")
+def get_channels(
+    client: Annotated[ChatClient, Depends(get_client)],
+) -> list[Channel]:
+    """Return the channels."""
+    return client.get_channels()
+
+
+def _get_channel_by_id(
+    channel_id: str, client: ChatClient
+) -> Channel:
+    """Resolve a string ID into a Channel object reference."""
+    channels = client.get_channels()
+    target = next((c for c in channels if c.id == channel_id), None)
+
+    if not target:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Channel with ID {channel_id} not found in this guild."
+        )
+    return target
+
+
+@app.post("/channels/{channel_id}/messages")
+async def send_channel_message(
+    client: Annotated[ChatClient, Depends(get_client)],
+    channel_id: str,
+    content: Annotated[str, Body(embed=True)],
+) -> Message:
+    """Send a message to a specific Discord channel.
+
+    Args:
+        client: The DiscordClient instance to use for API calls.
+        channel_id: The ID of the Discord channel.
+        content: The text of the message.
+
+    """
+    channel_obj = _get_channel_by_id(channel_id, client)
+
+    try:
+        return client.send_message(channel_obj, content)
+
+    except RuntimeError as error:
+        raise HTTPException(status_code=502, detail=f"Discord API error: {error}") from error
+
+
+@app.get("/channels/{channel_id}/messages")
+def get_channel_messages(
+    channel_id: str,
+    client: Annotated[ChatClient, Depends(get_client)],
+    limit: Annotated[
+        int, Query(description="Number of messages to fetch", gt=0, le=100)
+    ] = 10,
+) -> list[Message]:
+    """Retrieve recent messages from a specific channel.
+
+    Args:
+        channel_id: The ID of the Discord channel.
+        client: The DiscordClient instance to use for API calls.
+        limit: The maximum number of messages to return (default 10, max 100).
+
+    """
+    channel_obj = _get_channel_by_id(channel_id, client)
+
+    try:
+        return client.get_messages(channel_obj, limit=limit)
+
+    except RuntimeError as error:
+        raise HTTPException(
+            status_code=502, detail=f"Discord API error: {error}"
+        ) from error
+
+
+if __name__ == "__main__":
+    host = os.environ.get("HOST", "127.0.0.1")
+    port = int(os.environ.get("PORT", "8000"))
+
+    uvicorn.run(app, host=host, port=port)
