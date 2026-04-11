@@ -6,7 +6,7 @@ This document describes the Discord-based implementation of the `chat_client_api
 
 - **Interface:** `components/chat_client_api`
   - Defines the `ChatClient` contract and the `Channel` / `Message` models.
-  - Provides `register_client_factory(...)` and `get_client()` for dependency injection.
+  - Provides `register_client(...)` and `get_client()` for dependency injection.
 
 - **Implementation:** `components/discord_client_impl`
   - Implements the `ChatClient` interface using real Discord API calls.
@@ -36,20 +36,14 @@ client = get_client()
 
 ## Mapping Interface Methods to Discord
 
-The Discord client provides concrete behavior for the `ChatClient` methods by making real HTTP calls to Discord's API:
+The Discord client provides concrete behavior for all `ChatClient` methods:
 
-- `get_channels()`
-  - Calls `GET /guilds/{guild_id}/channels` and returns text channels (type=0) mapped into `Channel` models.
-
-- `get_messages(channel, limit=10)`
-  - Calls `GET /channels/{channel_id}/messages` and maps responses into `Message` models.
-  - Returns messages ordered oldest to newest (Discord returns newest first).
-
-- `send_message(channel, content)`
-  - Calls `POST /channels/{channel_id}/messages` and returns the created `Message`.
-
-All provider-specific types remain internal to `discord_client_impl`. The public surface
-only exposes `chat_client_api` models.
+- `get_channels()` — Calls `GET /guilds/{guild_id}/channels`, returns text channels mapped to `Channel` objects with `channel_id` and `name`
+- `get_channel(channel_id)` — Calls `GET /channels/{channel_id}`, returns a single `Channel`
+- `get_messages(channel_id, limit=10, cursor=None)` — Calls `GET /channels/{channel_id}/messages`, returns messages oldest first. Cursor maps to Discord's `before` parameter
+- `get_message(message_id)` — Fetches a single message. `message_id` is encoded as `"channel_id:discord_message_id"`
+- `send_message(channel_id, text)` — Calls `POST /channels/{channel_id}/messages`
+- `delete_message(message_id)` — Calls `DELETE /channels/{channel_id}/messages/{id}`
 
 ## Authentication
 

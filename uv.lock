@@ -5,7 +5,6 @@ requires-python = ">=3.13"
 [manifest]
 members = [
     "chat-client-adapter",
-    "chat-client-api",
     "discord-client-impl",
     "discord-service",
     "fast-api-client",
@@ -151,14 +150,14 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "chat-client-api", editable = "components/chat_client_api" },
+    { name = "chat-client-api", git = "https://github.com/HarshithKoriRaj/Shared-API.git" },
     { name = "fast-api-client", editable = "components/discord_service_api_client" },
 ]
 
 [[package]]
 name = "chat-client-api"
 version = "0.1.0"
-source = { editable = "components/chat_client_api" }
+source = { git = "https://github.com/HarshithKoriRaj/Shared-API.git#75227f8ba9b98e87b83fce345953e957c2fab591" }
 
 [[package]]
 name = "click"
@@ -267,7 +266,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "chat-client-api", editable = "components/chat_client_api" },
+    { name = "chat-client-api", git = "https://github.com/HarshithKoriRaj/Shared-API.git" },
     { name = "python-dotenv", specifier = ">=1.2.2" },
     { name = "requests", specifier = ">=2.31.0" },
 ]
@@ -291,7 +290,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "chat-client-api", editable = "components/chat_client_api" },
+    { name = "chat-client-api", git = "https://github.com/HarshithKoriRaj/Shared-API.git" },
     { name = "discord-client-impl", editable = "components/discord_client_impl" },
     { name = "fastapi" },
     { name = "itsdangerous" },

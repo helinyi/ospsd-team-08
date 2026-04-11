@@ -14,13 +14,13 @@ pytestmark = pytest.mark.integration
 @pytest.fixture(autouse=True)
 def reset_di_factory() -> None:
     """Reset DI so tests are isolated and order-independent."""
-    chat_client_api._client_factory = chat_client_api._default_factory
+    chat_client_api.client._ClientRegistry._factory = None
 
 
 @pytest.mark.circleci
 def test_get_client_fails_without_implementation() -> None:
     """get_client() should raise before any implementation is imported."""
-    with pytest.raises(RuntimeError, match="No ChatClient implementation registered"):
+    with pytest.raises(RuntimeError, match="No chat client implementation registered"):
         chat_client_api.get_client()
 
 

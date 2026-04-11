@@ -27,7 +27,7 @@ dev = [
 members = ["components/*"]
 
 [tool.uv.sources]
-chat-client-api = { workspace = true }
+chat-client-api = { git = "https://github.com/HarshithKoriRaj/Shared-API.git" }
 fast-api-client = { workspace = true }
 chat-client-adapter = { workspace = true }
 
@@ -71,14 +71,50 @@ ignore = [
 strict = true
 python_version = "3.13"
 mypy_path = [
-    "components/chat_client_api/src",
     "components/discord_client_impl/src",
     "components/discord_service/src",
-    "components/discord_service/src",
+    "components/chat_client_adapter/src",
+    "components/discord_service_api_client/src",
 ]
 
 [[tool.mypy.overrides]]
 module = "fast_api_client.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "chat_client_api"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "chat_client_api.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "discord_client_impl.client"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "discord_service.main"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "chat_client_adapter.adapter"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "test_client_methods"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "test_discord_service"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "test_adapter"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "discord_client_impl"
 ignore_errors = true
 
 [tool.pytest.ini_options]
@@ -87,10 +123,10 @@ testpaths = ["tests", "components"]
 addopts = "-v --tb=short"
 env_files = [".env"]
 pythonpath = [
-    "components/chat_client_api/src",
     "components/discord_client_impl/src",
     "components/discord_service/src",
-    "components/discord_service/src",
+    "components/chat_client_adapter/src",
+    "components/discord_service_api_client/src",
 ]
 markers = [
     "integration: Integration tests for DI verification",

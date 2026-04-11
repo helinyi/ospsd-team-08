@@ -39,12 +39,10 @@ jobs:
           command: |
             mkdir -p test-results/unit
             uv run pytest components/discord_client_impl/tests/ \
-              components/chat_client_api/tests/ \
               components/discord_service/tests/ \
               components/chat_client_adapter/tests/ \
               --junitxml=test-results/unit/results.xml \
               --cov=discord_client_impl \
-              --cov=chat_client_api \
               --cov=discord_service \
               --cov=chat_client_adapter \
               --cov-report=xml:coverage.xml \

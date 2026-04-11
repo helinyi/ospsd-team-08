@@ -19,7 +19,7 @@ packages = ["src/discord_client_impl"]
 
 
 [tool.uv.sources]
-chat-client-api = { workspace = true }
+chat-client-api = { git = "https://github.com/HarshithKoriRaj/Shared-API.git" }
 
 [dependency-groups]
 dev = [

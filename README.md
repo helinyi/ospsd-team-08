@@ -96,7 +96,7 @@ SESSION_SECRET_KEY=any-random-string
 ## Development
 ```bash
 # Run all tests
-uv run pytest tests/ components/discord_client_impl/tests/ components/chat_client_api/tests/
+uv run pytest
 
 # Run linting
 uv run ruff check .
@@ -153,7 +153,6 @@ http://127.0.0.1:8000
 ```
 .
 ├── components/
-│   ├── chat_client_api/           # Abstract chat client interface
 │   ├── discord_client_impl/       # Discord implementation + OAuth 2.0
 │   ├── discord_service/           # FastAPI microservice
 │   ├── discord_service_api_client/ # Auto-generated API client
@@ -168,6 +167,7 @@ http://127.0.0.1:8000
 ├── pyproject.toml
 └── README.md
 ```
+Note: `chat_client_api` is now consumed as an external git dependency from the shared vertical API repo.
 
 ---
 

@@ -86,9 +86,13 @@ from chat_client_api import get_client
 client = get_client()
 
 channels = client.get_channels()
-messages = client.get_messages("channel_id")
+channel = channels[0]
 
-client.send_message("channel_id", "Hello!")
+# Get messages using channel_id string
+messages = client.get_messages(channel.channel_id, limit=10)
+
+# Send message using channel_id string
+client.send_message(channel.channel_id, "Hello!")
 ```
 
 ---

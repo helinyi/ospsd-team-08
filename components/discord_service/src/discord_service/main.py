@@ -7,9 +7,9 @@ from typing import Annotated
 import discord_client_impl  # noqa: F401
 import requests
 import uvicorn
+from chat_client_api import Channel, Message
 from chat_client_api import get_client as get_chat_client
 from chat_client_api.client import ChatClient  # noqa: TC002
-from chat_client_api.models import Channel, Message  # noqa: TC002
 from discord_client_impl.auth import DiscordOAuthHandler
 from dotenv import load_dotenv
 from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request
@@ -110,7 +110,7 @@ def _get_channel_by_id(
 ) -> Channel:
     """Resolve a string ID into a Channel object reference."""
     channels = client.get_channels()
-    target = next((c for c in channels if c.id == channel_id), None)
+    target = next((c for c in channels if c.channel_id == channel_id), None)
 
     if not target:
         raise HTTPException(
@@ -134,10 +134,10 @@ async def send_channel_message(
         content: The text of the message.
 
     """
-    channel_obj = _get_channel_by_id(channel_id, client)
+    _get_channel_by_id(channel_id, client)
 
     try:
-        return client.send_message(channel_obj, content)
+        return client.send_message(channel_id, content)
 
     except RuntimeError as error:
         raise HTTPException(status_code=502, detail=f"Discord API error: {error}") from error
@@ -159,10 +159,10 @@ def get_channel_messages(
         limit: The maximum number of messages to return (default 10, max 100).
 
     """
-    channel_obj = _get_channel_by_id(channel_id, client)
+    _get_channel_by_id(channel_id, client)
 
     try:
-        return client.get_messages(channel_obj, limit=limit)
+        return client.get_messages(channel_id, limit=limit)
 
     except RuntimeError as error:
         raise HTTPException(

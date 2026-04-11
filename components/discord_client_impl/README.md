@@ -38,6 +38,19 @@ class DiscordAuthenticator
 class DiscordOAuthHandler
 ```
 
+### Methods
+| Method | Description |
+|---|---|
+| `get_channels()` | Returns all text channels in the guild |
+| `get_channel(channel_id)` | Returns a single channel by ID |
+| `get_messages(channel_id, limit, cursor)` | Returns recent messages oldest first |
+| `get_message(message_id)` | Returns a single message by opaque ID |
+| `send_message(channel_id, text)` | Sends a message to a channel |
+| `delete_message(message_id)` | Deletes a message by opaque ID |
+
+### Message ID Format
+`message_id` is encoded as `"channel_id:discord_message_id"` to satisfy the shared interface's single-string requirement.
+
 ---
 
 ## Required Environment Variables
