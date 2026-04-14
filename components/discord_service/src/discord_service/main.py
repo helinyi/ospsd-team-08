@@ -15,8 +15,8 @@ from discord_client_impl.auth import DiscordOAuthHandler
 from dotenv import load_dotenv
 from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
-from starlette.middleware.sessions import SessionMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
+from starlette.middleware.sessions import SessionMiddleware
 
 load_dotenv()
 
