@@ -32,7 +32,7 @@ def get_credentials(
     creds: Credentials | None = None
 
     if Path(resolved_token).exists():
-        creds = Credentials.from_authorized_user_file(
+        creds = Credentials.from_authorized_user_file( # type: ignore[no-untyped-call]
             resolved_token,
             SCOPES,
         )
