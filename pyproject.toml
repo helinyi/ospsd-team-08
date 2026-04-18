@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "calendar-client-api",
+    "chat-client-api",
     "dotenv>=0.9.9",
     "fastapi>=0.135.1",
     "httpx>=0.28.1",
@@ -28,10 +29,10 @@ dev = [
 members = ["components/*"]
 
 [tool.uv.sources]
-chat-client-api = { git = "https://github.com/HarshithKoriRaj/Shared-API.git" }
 fast-api-client = { workspace = true }
 chat-client-adapter = { workspace = true }
 calendar-client-api = { git = "https://github.com/samuelj25/ospsd-team-05", subdirectory = "components/calendar_client_api" }
+chat-client-api = { git = "https://github.com/HarshithKoriRaj/Shared-API.git" }
 
 # ruff configuration borrowed from https://github.com/nyu/oss-taapp-example/blob/root/pyproject.toml
 [tool.ruff]
