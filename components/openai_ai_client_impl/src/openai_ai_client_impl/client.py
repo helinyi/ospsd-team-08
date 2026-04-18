@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import os
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from ai_client_api import AIClient
 from chat_client_api import get_client
@@ -90,8 +90,8 @@ class OpenAIAIClient(AIClient):
         for _ in range(5):
             response = self._client.chat.completions.create(
                 model=self._model,
-                messages=messages,
-                tools=self._tools,
+                messages=cast("Any", messages),
+                tools=cast("Any", self._tools),
                 tool_choice="auto",
             )
 
@@ -102,9 +102,13 @@ class OpenAIAIClient(AIClient):
                 return assistant_message.content or ""
 
             for tool_call in assistant_message.tool_calls:
+                function_obj = getattr(tool_call, "function", None)
+                if function_obj is None:
+                    continue
+
                 tool_result = self._execute_tool_call(
-                    tool_name=tool_call.function.name,
-                    raw_arguments=tool_call.function.arguments,
+                    tool_name=function_obj.name,
+                    raw_arguments=function_obj.arguments,
                 )
 
                 messages.append(
@@ -172,17 +176,25 @@ class OpenAIAIClient(AIClient):
             message_dict["content"] = assistant_message.content
 
         if assistant_message.tool_calls:
-            message_dict["tool_calls"] = [
-                {
-                    "id": tool_call.id,
-                    "type": tool_call.type,
-                    "function": {
-                        "name": tool_call.function.name,
-                        "arguments": tool_call.function.arguments,
-                    },
-                }
-                for tool_call in assistant_message.tool_calls
-            ]
+            serialized_tool_calls: list[dict[str, Any]] = []
+
+            for tool_call in assistant_message.tool_calls:
+                function_obj = getattr(tool_call, "function", None)
+                if function_obj is None:
+                    continue
+
+                serialized_tool_calls.append(
+                    {
+                        "id": tool_call.id,
+                        "type": tool_call.type,
+                        "function": {
+                            "name": function_obj.name,
+                            "arguments": function_obj.arguments,
+                        },
+                    }
+                )
+
+            message_dict["tool_calls"] = serialized_tool_calls
 
         return message_dict
 

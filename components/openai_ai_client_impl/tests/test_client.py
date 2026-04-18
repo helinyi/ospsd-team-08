@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import Any, cast
 
 from chat_client_api import Channel, Message
 from openai_ai_client_impl.client import OpenAIAIClient
@@ -123,7 +123,7 @@ class FakeOpenAIClient:
 
 def test_run_with_tool_call() -> None:
     ai_client = OpenAIAIClient(chat_client=FakeChatClient())
-    ai_client._client = FakeOpenAIClient()
+    ai_client._client = cast("Any", FakeOpenAIClient())
 
     result = ai_client.run("show channels")
 
