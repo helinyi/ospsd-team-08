@@ -6,7 +6,7 @@ import json
 from typing import TYPE_CHECKING, Any
 
 import calendar_client_api
-from googleapiclient.discovery import build  # type: ignore[import-untyped]
+from googleapiclient.discovery import build
 
 from google_calendar_adapter.auth import get_credentials
 from google_calendar_adapter.event_impl import GoogleCalendarEvent
