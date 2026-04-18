@@ -1,10 +1,14 @@
+"""Tool definitions and handlers for the OpenAI AI client."""
+
 from __future__ import annotations
 
 import json
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any
 
-from chat_client_api import ChatClient
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
+    from chat_client_api import Channel, ChatClient, Message
 
 def build_openai_tools() -> list[dict[str, Any]]:
     """Return OpenAI tool definitions for the shared chat API."""
@@ -92,7 +96,8 @@ def build_openai_tools() -> list[dict[str, Any]]:
     ]
 
 
-def _serialize_channel(channel: Any) -> dict[str, Any]:
+def _serialize_channel(channel: Channel) -> dict[str, Any]:
+    """Serialize a shared API channel."""
     return {
         "channel_id": channel.channel_id,
         "name": channel.name,
@@ -101,7 +106,8 @@ def _serialize_channel(channel: Any) -> dict[str, Any]:
     }
 
 
-def _serialize_message(message: Any) -> dict[str, Any]:
+def _serialize_message(message: Message) -> dict[str, Any]:
+    """Serialize a shared API message."""
     return {
         "message_id": message.message_id,
         "channel": message.channel,

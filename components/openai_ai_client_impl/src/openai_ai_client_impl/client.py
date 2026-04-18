@@ -1,14 +1,20 @@
+"""OpenAI-backed AI client implementation with tool calling."""
+
 from __future__ import annotations
 
 import json
 import os
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from ai_client_api import AIClient
-from chat_client_api import ChatClient, get_client
+from chat_client_api import get_client
 from openai import OpenAI
 
 from openai_ai_client_impl.tools import build_openai_tools, get_tool_handlers
+
+if TYPE_CHECKING:
+    from chat_client_api import ChatClient
+    from openai.types.chat.chat_completion_message import ChatCompletionMessage
 
 
 class OpenAIAIClient(AIClient):
@@ -28,10 +34,12 @@ class OpenAIAIClient(AIClient):
 
         Raises:
             ValueError: If OPENAI_API_KEY is not set.
+
         """
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
-            raise ValueError("OPENAI_API_KEY is not set.")
+            msg = "OPENAI_API_KEY is not set."
+            raise ValueError(msg)
 
         self._client = OpenAI(api_key=api_key)
         self._chat_client = chat_client if chat_client is not None else get_client()
@@ -52,6 +60,7 @@ class OpenAIAIClient(AIClient):
 
         Returns:
             The assistant's final response.
+
         """
         messages: list[dict[str, Any]] = [
             {
@@ -117,6 +126,7 @@ class OpenAIAIClient(AIClient):
 
         Returns:
             A JSON string containing the tool output or an error payload.
+
         """
         if tool_name not in self._tool_handlers:
             return json.dumps({"error": f"Unknown tool: {tool_name}"})
@@ -124,7 +134,7 @@ class OpenAIAIClient(AIClient):
         try:
             parsed_arguments = self._parse_tool_arguments(raw_arguments)
             return self._tool_handlers[tool_name](**parsed_arguments)
-        except Exception as exc:
+        except (TypeError, ValueError, json.JSONDecodeError) as exc:
             return json.dumps({"error": str(exc)})
 
     @staticmethod
@@ -138,19 +148,23 @@ class OpenAIAIClient(AIClient):
             Parsed arguments dictionary.
 
         Raises:
-            ValueError: If arguments are not a JSON object.
+            TypeError: If arguments do not decode to a JSON object.
             json.JSONDecodeError: If JSON parsing fails.
+
         """
         if not raw_arguments:
             return {}
 
         parsed = json.loads(raw_arguments)
         if not isinstance(parsed, dict):
-            raise ValueError("Tool arguments must decode to a JSON object.")
+            msg = "Tool arguments must decode to a JSON object."
+            raise TypeError(msg)
         return parsed
 
     @staticmethod
-    def _assistant_message_to_dict(assistant_message: Any) -> dict[str, Any]:
+    def _assistant_message_to_dict(
+        assistant_message: ChatCompletionMessage,
+    ) -> dict[str, Any]:
         """Convert an OpenAI assistant message into a chat-completions message dict."""
         message_dict: dict[str, Any] = {"role": "assistant"}
 
@@ -173,7 +187,7 @@ class OpenAIAIClient(AIClient):
         return message_dict
 
     @staticmethod
-    def _safe_json_dump(value: Any) -> str:
+    def _safe_json_dump(value: object) -> str:
         """Serialize a value to JSON safely for prompt context."""
         try:
             return json.dumps(value)
