@@ -33,7 +33,7 @@ commands:
               exit 1
             fi
 
-            if printf '%s' "$GCLOUD_SERVICE_KEY" | base64 --decode > "$HOME/gcloud-service-key.json" 2>/dev/null; then
+            if printf '%s' "$GCLOUD_SERVICE_KEY" | base64 -d > "$HOME/gcloud-service-key.json" 2>/dev/null; then
               echo "Decoded base64 Google service account key."
             else
               printf '%s' "$GCLOUD_SERVICE_KEY" > "$HOME/gcloud-service-key.json"
