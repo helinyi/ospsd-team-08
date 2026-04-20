@@ -23,6 +23,7 @@ locals {
     "roles/secretmanager.admin",
     "roles/serviceusage.serviceUsageAdmin",
     "roles/storage.admin",
+    "roles/viewer",
   ])
 
   required_services = toset([
