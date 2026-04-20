@@ -1,5 +1,49 @@
 version: 2.1
 
+commands:
+  install_terraform:
+    description: Install Terraform in the job container
+    parameters:
+      version:
+        type: string
+        default: "1.14.8"
+    steps:
+      - run:
+          name: Install Terraform
+          command: |
+            apt-get update
+            apt-get install -y curl unzip
+            curl -fsSLo /tmp/terraform.zip "https://releases.hashicorp.com/terraform/<< parameters.version >>/terraform_<< parameters.version >>_linux_amd64.zip"
+            unzip -o /tmp/terraform.zip -d /usr/local/bin
+            terraform version
+
+  authenticate_gcloud:
+    description: Authenticate Google Cloud SDK and Terraform from CircleCI variables
+    steps:
+      - run:
+          name: Authenticate to Google Cloud
+          command: |
+            if [ -z "${GCLOUD_SERVICE_KEY:-}" ]; then
+              echo "GCLOUD_SERVICE_KEY must be set in CircleCI project environment variables or a CircleCI context."
+              exit 1
+            fi
+
+            if [ -z "${GOOGLE_PROJECT_ID:-}" ]; then
+              echo "GOOGLE_PROJECT_ID must be set."
+              exit 1
+            fi
+
+            if printf '%s' "$GCLOUD_SERVICE_KEY" | base64 --decode > "$HOME/gcloud-service-key.json" 2>/dev/null; then
+              echo "Decoded base64 Google service account key."
+            else
+              printf '%s' "$GCLOUD_SERVICE_KEY" > "$HOME/gcloud-service-key.json"
+              echo "Wrote raw JSON Google service account key."
+            fi
+
+            gcloud auth activate-service-account --key-file="$HOME/gcloud-service-key.json"
+            gcloud config set project "$GOOGLE_PROJECT_ID"
+            echo "export GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud-service-key.json" >> "$BASH_ENV"
+
 jobs:
   lint:
     docker:
@@ -64,8 +108,126 @@ jobs:
           path: htmlcov
           destination: coverage-report
 
+  terraform_validate:
+    docker:
+      - image: google/cloud-sdk:slim
+    environment:
+      TF_IN_AUTOMATION: "true"
+    steps:
+      - checkout
+      - install_terraform
+      - run:
+          name: Terraform fmt
+          command: terraform fmt -check -recursive infra/terraform
+      - run:
+          name: Terraform init without backend
+          command: terraform -chdir=infra/terraform init -backend=false
+      - run:
+          name: Terraform validate
+          command: terraform -chdir=infra/terraform validate
+
+  deploy_infrastructure:
+    docker:
+      - image: google/cloud-sdk:slim
+    environment:
+      ARTIFACT_REPOSITORY: cloud-run-source-deploy
+      CLOUD_RUN_SERVICE: discord-service
+      GOOGLE_PROJECT_ID: ospsd8-discord
+      GOOGLE_REGION: us-east4
+      TF_IN_AUTOMATION: "true"
+      TF_STATE_BUCKET: ospsd8-discord-terraform-state
+      TF_STATE_PREFIX: team-08/discord-service
+    steps:
+      - checkout
+      - install_terraform
+      - authenticate_gcloud
+      - run:
+          name: Bootstrap Terraform state bucket
+          command: |
+            if ! gcloud storage buckets describe "gs://${TF_STATE_BUCKET}" --project="${GOOGLE_PROJECT_ID}" >/dev/null 2>&1; then
+              gcloud storage buckets create "gs://${TF_STATE_BUCKET}" \
+                --project="${GOOGLE_PROJECT_ID}" \
+                --location="${GOOGLE_REGION}" \
+                --uniform-bucket-level-access
+            fi
+      - run:
+          name: Build and push image with Cloud Build
+          command: |
+            IMAGE_URI="${GOOGLE_REGION}-docker.pkg.dev/${GOOGLE_PROJECT_ID}/${ARTIFACT_REPOSITORY}/${CLOUD_RUN_SERVICE}:${CIRCLE_SHA1}"
+            gcloud builds submit . \
+              --tag="${IMAGE_URI}" \
+              --project="${GOOGLE_PROJECT_ID}" \
+              --region="${GOOGLE_REGION}"
+            echo "export IMAGE_URI=${IMAGE_URI}" >> "$BASH_ENV"
+      - run:
+          name: Terraform init
+          command: |
+            terraform -chdir=infra/terraform init \
+              -backend-config="bucket=${TF_STATE_BUCKET}" \
+              -backend-config="prefix=${TF_STATE_PREFIX}"
+      - run:
+          name: Create Secret Manager containers
+          command: |
+            terraform -chdir=infra/terraform apply -auto-approve \
+              -target='google_secret_manager_secret.app_secret' \
+              -var="project_id=${GOOGLE_PROJECT_ID}" \
+              -var="region=${GOOGLE_REGION}" \
+              -var="artifact_repository_id=${ARTIFACT_REPOSITORY}" \
+              -var="service_name=${CLOUD_RUN_SERVICE}" \
+              -var="image_uri=${IMAGE_URI}"
+      - run:
+          name: Seed Secret Manager versions from CircleCI variables
+          command: |
+            seed_secret() {
+              secret_id="$1"
+              env_name="$2"
+              secret_value="$(eval "printf '%s' \"\${${env_name}:-}\"")"
+
+              if [ -z "$secret_value" ]; then
+                echo "Skipping ${secret_id}: ${env_name} is not set."
+                return 0
+              fi
+
+              if ! gcloud secrets describe "$secret_id" --project="$GOOGLE_PROJECT_ID" >/dev/null 2>&1; then
+                echo "Secret ${secret_id} does not exist. Run Terraform secret bootstrap first."
+                exit 1
+              fi
+
+              printf '%s' "$secret_value" | gcloud secrets versions add "$secret_id" \
+                --project="$GOOGLE_PROJECT_ID" \
+                --data-file=- >/dev/null
+
+              echo "Added a new Secret Manager version for ${secret_id}."
+            }
+
+            seed_secret "discord-bot-token" "DISCORD_BOT_TOKEN"
+            seed_secret "discord-client-id" "DISCORD_CLIENT_ID"
+            seed_secret "discord-client-secret" "DISCORD_CLIENT_SECRET"
+            seed_secret "discord-guild-id" "DISCORD_GUILD_ID"
+            seed_secret "session-secret-key" "SESSION_SECRET_KEY"
+      - run:
+          name: Terraform apply Cloud Run infrastructure
+          command: |
+            terraform -chdir=infra/terraform apply -auto-approve \
+              -var="project_id=${GOOGLE_PROJECT_ID}" \
+              -var="region=${GOOGLE_REGION}" \
+              -var="artifact_repository_id=${ARTIFACT_REPOSITORY}" \
+              -var="service_name=${CLOUD_RUN_SERVICE}" \
+              -var="image_uri=${IMAGE_URI}"
+
 workflows:
   main:
     jobs:
       - lint
       - test
+      - terraform_validate
+      - deploy_infrastructure:
+          requires:
+            - lint
+            - test
+            - terraform_validate
+          filters:
+            branches:
+              only:
+                - hw-3
+                - feat/member5-iac-cloud-run
