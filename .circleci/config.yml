@@ -52,9 +52,7 @@ jobs:
       - checkout
       - run:
           name: Install uv
-          command: |
-            curl -LsSf https://astral.sh/uv/install.sh | sh
-            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+          command: pip install uv
       - run:
           name: Install dependencies
           command: uv sync --all-packages --group dev
@@ -72,9 +70,7 @@ jobs:
       - checkout
       - run:
           name: Install uv
-          command: |
-            curl -LsSf https://astral.sh/uv/install.sh | sh
-            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+          command: pip install uv
       - run:
           name: Install dependencies
           command: uv sync --all-packages --group dev
