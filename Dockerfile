@@ -20,6 +20,8 @@ COPY components/discord_service_api_client/ components/discord_service_api_clien
 COPY components/chat_client_adapter/ components/chat_client_adapter/
 COPY components/calendar_integration/ components/calendar_integration/
 COPY components/google_calendar_adapter/ components/google_calendar_adapter/
+COPY components/ai_client_api/ components/ai_client_api/
+COPY components/openai_ai_client_impl/ components/openai_ai_client_impl/
 
 # Install production dependencies only (no dev group)
 RUN uv sync --all-packages --no-dev --frozen
