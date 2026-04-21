@@ -13,7 +13,9 @@ commands:
           command: |
             apt-get update
             apt-get install -y curl unzip
-            curl -fsSLo /tmp/terraform.zip "https://releases.hashicorp.com/terraform/<< parameters.version >>/terraform_<< parameters.version >>_linux_amd64.zip"
+            curl --retry 5 --retry-delay 5 --connect-timeout 20 \
+              -fsSLo /tmp/terraform.zip \
+              "https://releases.hashicorp.com/terraform/<< parameters.version >>/terraform_<< parameters.version >>_linux_amd64.zip"
             unzip -o /tmp/terraform.zip -d /usr/local/bin
             terraform version
 
@@ -53,7 +55,8 @@ jobs:
       - run:
           name: Install uv
           command: |
-            curl -LsSf https://astral.sh/uv/install.sh | sh
+            curl --retry 5 --retry-delay 5 --connect-timeout 20 \
+              -LsSf https://astral.sh/uv/install.sh | sh
             echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
       - run:
           name: Install dependencies
@@ -73,7 +76,8 @@ jobs:
       - run:
           name: Install uv
           command: |
-            curl -LsSf https://astral.sh/uv/install.sh | sh
+            curl --retry 5 --retry-delay 5 --connect-timeout 20 \
+              -LsSf https://astral.sh/uv/install.sh | sh
             echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
       - run:
           name: Install dependencies

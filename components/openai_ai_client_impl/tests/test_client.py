@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import json
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from chat_client_api import Channel, Message
 from openai_ai_client_impl.client import OpenAIAIClient
+
+if TYPE_CHECKING:
+    import pytest
 
 
 class FakeChatClient:
@@ -121,7 +124,9 @@ class FakeOpenAIClient:
         self.chat = FakeChat()
 
 
-def test_run_with_tool_call() -> None:
+def test_run_with_tool_call(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test-openai-key")
+
     ai_client = OpenAIAIClient(chat_client=FakeChatClient())
     ai_client._client = cast("Any", FakeOpenAIClient())
 
