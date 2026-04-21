@@ -7,7 +7,7 @@ from pathlib import Path
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore[import-untyped]
+from google_auth_oauthlib.flow import InstalledAppFlow
 
 SCOPES = [
     "https://www.googleapis.com/auth/calendar",
@@ -32,7 +32,7 @@ def get_credentials(
     creds: Credentials | None = None
 
     if Path(resolved_token).exists():
-        creds = Credentials.from_authorized_user_file(  # type: ignore[no-untyped-call]
+        creds = Credentials.from_authorized_user_file( # type: ignore[no-untyped-call]
             resolved_token,
             SCOPES,
         )
