@@ -5,6 +5,8 @@ description = "OSPSD Team 08 — Chat client with Discord implementation"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "calendar-client-api",
+    "chat-client-api",
     "dotenv>=0.9.9",
     "fastapi>=0.135.1",
     "httpx>=0.28.1",
@@ -28,9 +30,10 @@ dev = [
 members = ["components/*"]
 
 [tool.uv.sources]
-chat-client-api = { git = "https://github.com/HarshithKoriRaj/Shared-API.git" }
 fast-api-client = { workspace = true }
 chat-client-adapter = { workspace = true }
+calendar-client-api = { git = "https://github.com/samuelj25/ospsd-team-05", subdirectory = "components/calendar_client_api" }
+chat-client-api = { git = "https://github.com/HarshithKoriRaj/Shared-API.git" }
 
 # ruff configuration borrowed from https://github.com/nyu/oss-taapp-example/blob/root/pyproject.toml
 [tool.ruff]
@@ -77,45 +80,10 @@ mypy_path = [
     "components/chat_client_adapter/src",
     "components/discord_service_api_client/src",
 ]
+ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "fast_api_client.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "chat_client_api"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "chat_client_api.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "discord_client_impl.client"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "discord_service.main"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "chat_client_adapter.adapter"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "test_client_methods"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "test_discord_service"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "test_adapter"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "discord_client_impl"
 ignore_errors = true
 
 [tool.pytest.ini_options]

@@ -1,0 +1,6 @@
+project_id             = "ospsd8-discord"
+region                 = "us-east4"
+service_name           = "discord-service"
+artifact_repository_id = "cloud-run-source-deploy"
+discord_redirect_uri   = "https://discord-service-122083288286.us-east4.run.app/auth/callback"
+image_uri              = "us-east4-docker.pkg.dev/ospsd8-discord/cloud-run-source-deploy/discord-service:replace-with-built-image-tag"

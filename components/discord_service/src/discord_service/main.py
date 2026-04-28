@@ -3,11 +3,17 @@
 from __future__ import annotations
 
 import os
+from datetime import UTC, datetime
 from typing import Annotated
 
 import discord_client_impl  # noqa: F401
 import requests
 import uvicorn
+from calendar_client_api.client import Client as CalendarClient  # noqa: TC002
+from calendar_integration.service import (
+    get_events_message,
+    get_tomorrows_events_message,
+)
 from chat_client_api import Channel, Message
 from chat_client_api import get_client as get_chat_client
 from chat_client_api.client import ChatClient  # noqa: TC002
@@ -15,6 +21,7 @@ from discord_client_impl.auth import DiscordOAuthHandler
 from dotenv import load_dotenv
 from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
+from google_calendar_adapter.client import get_connected_calendar_client
 from prometheus_fastapi_instrumentator import Instrumentator
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -35,6 +42,14 @@ def get_client() -> ChatClient:  # pragma: no cover
 def get_oauth_handler() -> DiscordOAuthHandler:
     """Dependency for OAuth flow management."""
     return DiscordOAuthHandler.from_env()
+
+
+def get_calendar_client() -> CalendarClient:  # pragma: no cover
+    """Create a CalendarClient instance via dependency injection."""
+    try:
+        return get_connected_calendar_client()
+    except (RuntimeError, FileNotFoundError) as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
 
 
 @app.get("/health")
@@ -174,6 +189,28 @@ def get_channel_messages(
         raise HTTPException(
             status_code=502, detail=f"Discord API error: {error}"
         ) from error
+
+@app.get("/calendar/tomorrow")
+def get_tomorrows_events(
+        calendar_client: Annotated[CalendarClient, Depends(get_calendar_client)],
+) -> dict[str, str]:
+    """Return tomorrow's calendar events as a formatted chat message."""
+    try:
+        message = get_tomorrows_events_message(calendar_client, datetime.now(UTC))
+    except RuntimeError as error:
+        raise HTTPException(status_code=502, detail=str(error)) from error
+
+    return {"message": message}
+
+@app.get("/calendar/events")
+def get_calendar_events(
+        start_time: datetime,
+        end_time: datetime,
+        calendar_client: Annotated[CalendarClient, Depends(get_calendar_client)],
+) -> dict[str, str]:
+    """Return calendar events for a given time range."""
+    message = get_events_message(calendar_client, start_time, end_time)
+    return {"message": message}
 
 
 if __name__ == "__main__":
