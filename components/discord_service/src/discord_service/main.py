@@ -22,14 +22,17 @@ from dotenv import load_dotenv
 from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
 from google_calendar_adapter.client import get_connected_calendar_client
+from prometheus_fastapi_instrumentator import Instrumentator
 from starlette.middleware.sessions import SessionMiddleware
 
 load_dotenv()
 
 app = FastAPI()
+Instrumentator().instrument(app).expose(app)
 
 secret_key = os.environ.get("SESSION_SECRET_KEY", "dev-secret-key")
 app.add_middleware(SessionMiddleware, secret_key=secret_key)
+
 
 def get_client() -> ChatClient:  # pragma: no cover
     """Create a ChatClient instance via dependency injection."""
@@ -77,6 +80,7 @@ def auth_callback(
     request.session["access_token"] = token
     return {"message": "Authentication successful"}
 
+
 @app.get("/users/me")
 def get_current_user(request: Request) -> dict[str, str]:
     """Return the currently authenticated Discord user.
@@ -113,6 +117,7 @@ def get_current_user(request: Request) -> dict[str, str]:
         "discriminator": data.get("discriminator", ""),
     }
 
+
 @app.get("/channels")
 def get_channels(
     client: Annotated[ChatClient, Depends(get_client)],
@@ -121,9 +126,7 @@ def get_channels(
     return client.get_channels()
 
 
-def _get_channel_by_id(
-    channel_id: str, client: ChatClient
-) -> Channel:
+def _get_channel_by_id(channel_id: str, client: ChatClient) -> Channel:
     """Resolve a string ID into a Channel object reference."""
     channels = client.get_channels()
     target = next((c for c in channels if c.channel_id == channel_id), None)
@@ -131,7 +134,7 @@ def _get_channel_by_id(
     if not target:
         raise HTTPException(
             status_code=404,
-            detail=f"Channel with ID {channel_id} not found in this guild."
+            detail=f"Channel with ID {channel_id} not found in this guild.",
         )
     return target
 
@@ -156,7 +159,9 @@ async def send_channel_message(
         return client.send_message(channel_id, content)
 
     except RuntimeError as error:
-        raise HTTPException(status_code=502, detail=f"Discord API error: {error}") from error
+        raise HTTPException(
+            status_code=502, detail=f"Discord API error: {error}"
+        ) from error
 
 
 @app.get("/channels/{channel_id}/messages")
