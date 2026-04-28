@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Any, cast
-
+from typing import Any, cast
+from datetime import UTC, datetime
+from chat_client_api import ChatClient
 from chat_client_api import Channel, Message
 from openai_ai_client_impl.client import OpenAIAIClient
 
-if TYPE_CHECKING:
-    import pytest
+import pytest
 
 
-class FakeChatClient:
+class FakeChatClient(ChatClient):
     def get_channels(self) -> list[Channel]:
         return [
             Channel(
@@ -41,7 +41,7 @@ class FakeChatClient:
                 channel=channel_id,
                 text="hello",
                 sender="bot",
-                timestamp="2026-04-17T21:00:00Z",
+                timestamp=datetime.now(UTC),
             )
         ]
 
@@ -51,7 +51,7 @@ class FakeChatClient:
             channel="123",
             text="hello",
             sender="bot",
-            timestamp="2026-04-17T21:00:00Z",
+            timestamp=datetime.now(UTC),
         )
 
     def delete_message(self, message_id: str) -> None:
@@ -63,7 +63,7 @@ class FakeChatClient:
             channel=channel_id,
             text=text,
             sender="me",
-            timestamp="2026-04-17T21:01:00Z",
+            timestamp=datetime.now(UTC),
         )
 
 
@@ -133,3 +133,44 @@ def test_run_with_tool_call(monkeypatch: pytest.MonkeyPatch) -> None:
     result = ai_client.run("show channels")
 
     assert "Channels retrieved" in result
+
+def test_raises_without_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    with pytest.raises(ValueError, match="OPENAI_API_KEY"):
+        OpenAIAIClient(chat_client=FakeChatClient())
+
+
+def test_run_returns_direct_response(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test when model responds without tool calls."""
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+
+    class DirectResponseCompletions:
+        def create(self, *args: Any, **kwargs: Any) -> FakeResponse:
+            return FakeResponse(FakeMessage(content="Hello there!"))
+
+    class DirectChat:
+        completions = DirectResponseCompletions()
+
+    ai_client = OpenAIAIClient(chat_client=FakeChatClient())
+    ai_client._client = cast("Any", type("C", (), {"chat": DirectChat()})())
+
+    result = ai_client.run("hello")
+    assert result == "Hello there!"
+
+
+def test_run_with_context(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test run with extra context."""
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+
+    class DirectResponseCompletions:
+        def create(self, *args: Any, **kwargs: Any) -> FakeResponse:
+            return FakeResponse(FakeMessage(content="Done."))
+
+    class DirectChat:
+        completions = DirectResponseCompletions()
+
+    ai_client = OpenAIAIClient(chat_client=FakeChatClient())
+    ai_client._client = cast("Any", type("C", (), {"chat": DirectChat()})())
+
+    result = ai_client.run("hello", context={"key": "value"})
+    assert result == "Done."

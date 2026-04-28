@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import json
 
+from datetime import UTC, datetime
+from chat_client_api import ChatClient
 from chat_client_api import Channel, Message
 from openai_ai_client_impl.tools import get_tool_handlers
 
 
-class FakeChatClient:
+class FakeChatClient(ChatClient):
     def get_channels(self) -> list[Channel]:
         return [
             Channel(channel_id="123", name="general", is_private=False, channel_type="group")
@@ -32,7 +34,7 @@ class FakeChatClient:
                 channel=channel_id,
                 text="hello",
                 sender="bot",
-                timestamp="2026-04-17T21:00:00Z",
+                timestamp=datetime.now(UTC),
             )
         ]
 
@@ -42,7 +44,7 @@ class FakeChatClient:
             channel="123",
             text="hello",
             sender="bot",
-            timestamp="2026-04-17T21:00:00Z",
+            timestamp=datetime.now(UTC),
         )
 
     def delete_message(self, message_id: str) -> None:
@@ -54,7 +56,7 @@ class FakeChatClient:
             channel=channel_id,
             text=text,
             sender="me",
-            timestamp="2026-04-17T21:01:00Z",
+            timestamp=datetime.now(UTC),
         )
 
 
@@ -75,3 +77,18 @@ def test_send_message_tool() -> None:
 
     assert parsed["channel"] == "123"
     assert parsed["text"] == "hi"
+
+def test_get_channel_tool() -> None:
+    handlers = get_tool_handlers(FakeChatClient())
+    result = handlers["get_channel"](channel_id="123")
+    parsed = json.loads(result)
+    assert parsed["channel_id"] == "123"
+    assert parsed["name"] == "general"
+
+
+def test_get_messages_tool() -> None:
+    handlers = get_tool_handlers(FakeChatClient())
+    result = handlers["get_messages"](channel_id="123", limit=5)
+    parsed = json.loads(result)
+    assert len(parsed) == 1
+    assert parsed[0]["text"] == "hello"
