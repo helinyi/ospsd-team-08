@@ -3,5 +3,6 @@ global:
 
 scrape_configs:
   - job_name: 'fastapi-discord-service'
+    scheme: https
     static_configs:
-      - targets: ['app:8080']
+      - targets: ['discord-service-122083288286.us-east4.run.app']
