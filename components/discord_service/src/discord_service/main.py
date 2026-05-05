@@ -22,6 +22,7 @@ from dotenv import load_dotenv
 from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
 from google_calendar_adapter.client import get_connected_calendar_client
+from openai_ai_client_impl.client import OpenAIAIClient
 from starlette.middleware.sessions import SessionMiddleware
 
 load_dotenv()
@@ -206,6 +207,23 @@ def get_calendar_events(
     """Return calendar events for a given time range."""
     message = get_events_message(calendar_client, start_time, end_time)
     return {"message": message}
+
+
+@app.post("/ai/chat")
+def ai_chat(
+    user_input: Annotated[str, Body(embed=True)],
+    client: Annotated[ChatClient, Depends(get_client)],
+) -> dict[str, str]:
+    """AI chat endpoint that uses the OpenAI AI client."""
+    try:
+        ai_client = OpenAIAIClient(chat_client=client)
+        response = ai_client.run(user_input)
+
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=str(error)) from error
+
+    else:
+        return {"response": response}
 
 
 if __name__ == "__main__":
