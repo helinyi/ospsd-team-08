@@ -115,7 +115,7 @@ class DiscordClient(ChatClient):
 
         """
         url = f"{self._DISCORD_API_BASE}/channels/{channel_id}/messages"
-        params: dict[str, object] = {"limit": limit}
+        params: dict[str, str | int] = {"limit": limit}
         if cursor:
             params["before"] = cursor
         try:
@@ -146,7 +146,7 @@ class DiscordClient(ChatClient):
                 text=str(raw.get("content", "")),
                 timestamp=datetime.fromisoformat(
                     str(raw["timestamp"])
-                ).replace(tzinfo=UTC).isoformat(),
+                ).replace(tzinfo=UTC),
             )
             for raw in raw_messages
         ]
@@ -198,7 +198,7 @@ class DiscordClient(ChatClient):
             text=str(raw.get("content", "")),
             timestamp=datetime.fromisoformat(
                 str(raw["timestamp"])
-            ).replace(tzinfo=UTC).isoformat(),
+            ).replace(tzinfo=UTC),
         )
 
     def send_message(self, channel_id: str, text: str) -> Message:
@@ -241,7 +241,7 @@ class DiscordClient(ChatClient):
             text=str(raw.get("content", "")),
             timestamp=datetime.fromisoformat(
                 str(raw["timestamp"])
-            ).replace(tzinfo=UTC).isoformat(),
+            ).replace(tzinfo=UTC),
         )
 
     def delete_message(self, message_id: str) -> None:

@@ -173,7 +173,7 @@ def test_send_message_success(mock_discord_client: MagicMock) -> None:
         channel="123",
         sender="me",
         text="Hello world",
-        timestamp=datetime.now(UTC).isoformat(),
+        timestamp=datetime.now(UTC),
     )
 
     mock_discord_client.get_channels.return_value = [channel]
@@ -264,7 +264,7 @@ def test_get_messages_success(mock_discord_client: MagicMock) -> None:
             channel="123",
             sender="user1",
             text="Hello",
-            timestamp=datetime.now(UTC).isoformat(),
+            timestamp=datetime.now(UTC),
         )
     ]
     mock_discord_client.get_messages.return_value = mock_messages
@@ -315,3 +315,4 @@ def test_get_calendar_tomorrow_unconfigured() -> None:
 
     assert response.status_code == 503
     assert "Google OAuth credentials file not found" in response.json()["detail"]
+

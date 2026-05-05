@@ -107,6 +107,30 @@ uv run mypy components/
 
 ---
 
+## Infrastructure as Code
+
+Infrastructure is managed with Terraform in `infra/terraform`.
+
+Terraform imports and manages the existing Google Cloud resources:
+
+- Cloud Run service: `discord-service`
+- Artifact Registry repository: `cloud-run-source-deploy`
+- CircleCI Terraform deployer service account and IAM
+- Secret Manager secret containers
+- Cloud Run runtime service account and IAM
+
+CircleCI runs the deployment workflow. Store deployment and application secrets in CircleCI project environment variables or a CircleCI context. During deployment, CircleCI copies those values into Google Secret Manager so Cloud Run reads secrets at runtime.
+
+Useful local checks:
+
+```bash
+terraform fmt -check -recursive infra/terraform
+terraform -chdir=infra/terraform init -backend=false
+terraform -chdir=infra/terraform validate
+```
+
+---
+
 ## Running the Service Locally
 ```bash
 uv run uvicorn discord_service.main:app --reload
@@ -160,6 +184,8 @@ http://127.0.0.1:8000
 ├── tests/
 │   ├── e2e/                       # End-to-end tests
 │   └── integration/               # Integration tests
+├── infra/
+│   └── terraform/                  # Google Cloud Run IaC
 ├── docs/                          # MkDocs documentation
 ├── contributing.md
 ├── design.md

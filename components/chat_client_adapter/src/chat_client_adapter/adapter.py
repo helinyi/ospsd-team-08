@@ -167,5 +167,5 @@ class ChatClientAdapter(ChatClient):
             channel=str(message.channel.id) if hasattr(message.channel, "id") else str(message.channel),
             sender=str(message.sender),
             text=str(message.content),
-            timestamp=str(message.timestamp),
+            timestamp=message.timestamp,
         )

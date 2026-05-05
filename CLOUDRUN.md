@@ -11,6 +11,8 @@
 
 ## Setup Commands
 
+The original deployment was created manually with `gcloud` and Cloud Build. The current deployment is managed by Terraform in `infra/terraform` and applied by CircleCI.
+
 ### 1. Set Active Project
 
 ```bash
@@ -79,9 +81,9 @@ gcloud builds repositories create ospsd-team-08 \
   --project=ospsd8-discord
 ```
 
-### 6. Create Cloud Build Trigger
+### 6. Legacy Cloud Build Trigger
 
-Auto-deploys on every push to the `hw-2` branch:
+This was the old deployment path. The current pipeline uses CircleCI plus Terraform instead, so this trigger is kept here only as historical context.
 
 ```bash
 gcloud builds triggers create github \
@@ -93,6 +95,108 @@ gcloud builds triggers create github \
   --project=ospsd8-discord \
   --service-account="projects/ospsd8-discord/serviceAccounts/122083288286-compute@developer.gserviceaccount.com"
 ```
+
+## Terraform Deployment
+
+Terraform code lives in:
+
+```bash
+infra/terraform
+```
+
+It manages:
+
+- Existing Cloud Run service: `discord-service`
+- Existing Artifact Registry repository: `cloud-run-source-deploy`
+- Required Google APIs
+- CircleCI Terraform deployer service account and IAM
+- Cloud Run runtime service account
+- Secret Manager secret containers
+- IAM for Cloud Run to read secrets
+- Public Cloud Run invoker access
+
+### Imported Existing Resources
+
+The existing Google Cloud resources have already been imported into the shared Terraform state at:
+
+```bash
+gs://ospsd8-discord-terraform-state/team-08/discord-service/default.tfstate
+```
+
+Normal Terraform runs should use the shared backend and do not need import blocks:
+
+```bash
+gcloud config set account lh1505@nyu.edu
+gcloud config set project ospsd8-discord
+
+terraform -chdir=infra/terraform init \
+  -backend-config="bucket=ospsd8-discord-terraform-state" \
+  -backend-config="prefix=team-08/discord-service"
+
+terraform -chdir=infra/terraform plan
+```
+
+The import covered the existing Cloud Run service, Artifact Registry repository, public invoker IAM binding, required Google APIs, CircleCI deployer service account, deployer IAM bindings, runtime service account, Secret Manager secret containers, and Cloud Run secret-access IAM.
+
+The Cloud Run service previously had Discord credentials configured as plain environment values. Those values have been moved into Secret Manager. Do not copy secret values into Terraform files.
+
+### CircleCI Variables
+
+Because this repo deploys through CircleCI, use **CircleCI project environment variables** or a **CircleCI context**. GitHub Actions also has repository secrets, but those only apply if the project uses GitHub Actions workflows.
+
+The deployer service account already exists and is managed by Terraform:
+
+```bash
+circleci-terraform-deployer@ospsd8-discord.iam.gserviceaccount.com
+```
+
+If the key must be rotated, create a new key and store it in CircleCI as `GCLOUD_SERVICE_KEY`:
+
+```bash
+CIRCLECI_SA="circleci-terraform-deployer@ospsd8-discord.iam.gserviceaccount.com"
+
+gcloud iam service-accounts keys create circleci-terraform-key.json \
+  --iam-account="${CIRCLECI_SA}" \
+  --project=ospsd8-discord
+
+base64 -i circleci-terraform-key.json
+rm circleci-terraform-key.json
+```
+
+Copy the base64 output into the CircleCI variable `GCLOUD_SERVICE_KEY`.
+
+Set these deployment variables in CircleCI:
+
+| Variable | Purpose |
+|---|---|
+| `GCLOUD_SERVICE_KEY` | Google service account key JSON, either raw JSON or base64-encoded JSON |
+| `GOOGLE_PROJECT_ID` | `ospsd8-discord` |
+| `GOOGLE_REGION` | `us-east4` |
+| `TF_STATE_BUCKET` | `ospsd8-discord-terraform-state` |
+| `TF_STATE_PREFIX` | `team-08/discord-service` |
+
+Set these application variables in CircleCI:
+
+| Variable | Runtime destination |
+|---|---|
+| `DISCORD_CLIENT_ID` | Secret Manager secret `discord-client-id` |
+| `DISCORD_CLIENT_SECRET` | Secret Manager secret `discord-client-secret` |
+| `DISCORD_BOT_TOKEN` | Secret Manager secret `discord-bot-token` |
+| `DISCORD_GUILD_ID` | Secret Manager secret `discord-guild-id` |
+| `SESSION_SECRET_KEY` | Secret Manager secret `session-secret-key` |
+
+CircleCI reads those variables during deployment and adds them as new Secret Manager versions. Cloud Run then reads the values from Secret Manager at runtime.
+
+### CircleCI Deployment Flow
+
+The `deploy_infrastructure` job in `.circleci/config.yml` does this:
+
+1. Authenticates to Google Cloud using `GCLOUD_SERVICE_KEY`.
+2. Creates the Terraform state bucket if it does not exist.
+3. Builds and pushes a new Docker image with Cloud Build.
+4. Runs Terraform once to create Secret Manager secret containers.
+5. Adds Secret Manager versions from CircleCI variables.
+6. Runs Terraform again to apply the Cloud Run service, IAM, and image update.
 
 ## Useful Commands
 
@@ -106,9 +210,10 @@ gcloud beta builds log <BUILD_ID> --region=us-east4 --project=ospsd8-discord --s
 # Get service URL
 gcloud run services describe discord-service --region=us-east4 --project=ospsd8-discord --format="value(status.url)"
 
-# Update environment variables
-gcloud run services update discord-service --region=us-east4 --project=ospsd8-discord \
-  --set-env-vars "DISCORD_CLIENT_ID=xxx,DISCORD_CLIENT_SECRET=xxx,DISCORD_BOT_TOKEN=xxx,DISCORD_GUILD_ID=xxx,DISCORD_REDIRECT_URI=https://discord-service-122083288286.us-east4.run.app/auth/callback"
+# Add or rotate one Secret Manager value manually
+printf '%s' "new-secret-value" | gcloud secrets versions add discord-bot-token \
+  --project=ospsd8-discord \
+  --data-file=-
 
 # Test health endpoint
 curl https://discord-service-122083288286.us-east4.run.app/health
@@ -116,7 +221,7 @@ curl https://discord-service-122083288286.us-east4.run.app/health
 
 ## Environment Variables
 
-Set these via Cloud Run (Console or CLI) — never commit secrets to source control:
+Secret values are set in CircleCI and copied into Secret Manager during deployment. Do not commit secret values to source control.
 
 | Variable | Description |
 |---|---|
@@ -125,3 +230,4 @@ Set these via Cloud Run (Console or CLI) — never commit secrets to source cont
 | `DISCORD_BOT_TOKEN` | Discord bot token |
 | `DISCORD_GUILD_ID` | Target Discord guild (server) ID |
 | `DISCORD_REDIRECT_URI` | OAuth callback URL (`https://discord-service-122083288286.us-east4.run.app/auth/callback`) |
+| `SESSION_SECRET_KEY` | Secret key for signed FastAPI session cookies |

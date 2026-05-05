@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING, Any
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from collections.abc import Callable
 
     from chat_client_api import Channel, ChatClient, Message
@@ -113,7 +113,7 @@ def _serialize_message(message: Message) -> dict[str, Any]:
         "channel": message.channel,
         "text": message.text,
         "sender": message.sender,
-        "timestamp": message.timestamp,
+        "timestamp": message.timestamp.isoformat(),
     }
 
 

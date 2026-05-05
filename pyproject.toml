@@ -11,6 +11,7 @@ dependencies = [
     "fastapi>=0.135.1",
     "httpx>=0.28.1",
     "itsdangerous>=2.2.0",
+    "prometheus-fastapi-instrumentator>=6.1.0",
     "requests>=2.32.5",
     "uvicorn>=0.42.0",
 ]
@@ -83,42 +84,6 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "fast_api_client.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "chat_client_api"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "chat_client_api.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "discord_client_impl.client"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "discord_service.main"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "chat_client_adapter.adapter"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "test_client_methods"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "test_discord_service"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "test_adapter"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "discord_client_impl"
 ignore_errors = true
 
 [tool.pytest.ini_options]
