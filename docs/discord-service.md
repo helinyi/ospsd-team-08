@@ -16,7 +16,7 @@
 | GET | `/calendar/tomorrow` | Returns tomorrow's Google Calendar events |
 | GET | `/calendar/events` | Returns events for a given time range |
 | GET | `/metrics` | Prometheus telemetry metrics |
-| POST | `/ai/chat` | AI-powered chat with tool calling |
+| POST | `/ai/chat` | AI-powered chat with tool calling (Discord + Google Calendar) |
 
 ## Dependency Injection
 

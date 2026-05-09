@@ -117,6 +117,9 @@ The calendar integration depends on the shared `calendar-client-api` from Team 5
 ### get_events(start_time: datetime, end_time: datetime) -> Iterable[Event]
 Fetch calendar events within a time range.
 
+### create_event(title, start_time, end_time, description, location) -> Event
+Create a new calendar event.
+
 ### Event Model
 - `id` (str): Event identifier
 - `title` (str): Event title
