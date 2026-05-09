@@ -41,7 +41,7 @@ For the HW3 shared vertical API adaptation plan, see [hw3-plan.md](hw3-plan.md).
    Formats Google Calendar events into chat-friendly messages.
 
 9. **google_calendar_adapter**
-   Implements the shared `calendar-client-api` interface using the real Google Calendar API.
+   Implements the shared `calendar-client-api` interface using the real Google Calendar API. Tests mock the Google API service object — no real credentials needed for unit tests.
 
 ---
 
@@ -130,7 +130,7 @@ The shared interface defines 6 methods:
 
 ## AI Integration (HW3)
 
-`ai_client_api` defines the abstract interface:
+`ai_client_api` defines the abstract interface and provides `register_client()` and `get_client()` following the same DI pattern as `chat_client_api`:
 
 ```python
 class AIClient(ABC):
@@ -138,7 +138,17 @@ class AIClient(ABC):
     def run(self, user_input: str, context: dict[str, Any] | None = None) -> str: ...
 ```
 
-`openai_ai_client_impl` implements this using OpenAI GPT-4o-mini with a tool-calling loop. Available tools map directly to `ChatClient` methods:
+Importing `openai_ai_client_impl` automatically registers the OpenAI implementation:
+
+```python
+import openai_ai_client_impl  # registers OpenAI as the AI client
+from ai_client_api import get_client
+
+ai = get_client()
+response = ai.run("What channels are available?")
+```
+
+`openai_ai_client_impl` implements this using OpenAI GPT-4o-mini with a tool-calling loop.
 
 | Tool | Action |
 |---|---|

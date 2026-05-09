@@ -91,12 +91,16 @@ jobs:
               components/chat_client_adapter/tests/ \
               components/openai_ai_client_impl/tests/ \
               components/calendar_integration/tests/ \
+              components/ai_client_api/tests/ \
+              components/google_calendar_adapter/tests/ \
               --junitxml=test-results/unit/results.xml \
               --cov=discord_client_impl \
               --cov=discord_service \
               --cov=chat_client_adapter \
               --cov=openai_ai_client_impl \
               --cov=calendar_integration \
+              --cov=ai_client_api \
+              --cov=google_calendar_adapter \
               --cov-report=xml:coverage.xml \
               --cov-report=html:htmlcov
       - run:

@@ -76,11 +76,11 @@ client.send_message(channels[0].channel_id, "Hello!")
 ## AI Client Usage
 
 ```python
-import discord_client_impl
-from chat_client_api import get_client
-from openai_ai_client_impl.client import OpenAIAIClient
+import discord_client_impl       # registers Discord as chat client
+import openai_ai_client_impl     # registers OpenAI as AI client
+from ai_client_api import get_client
 
-ai = OpenAIAIClient(chat_client=get_client())
+ai = get_client()
 response = ai.run("What channels are available?")
 print(response)
 ```
