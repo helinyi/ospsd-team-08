@@ -148,6 +148,24 @@ resource "google_cloud_run_v2_service" "discord_service" {
         }
       }
 
+      dynamic "env" {
+        for_each = local.app_mounted_secrets
+
+        content {
+          name  = env.value.env_var
+          value = "${env.value.mount_path}/${env.value.file_name}"
+        }
+      }
+
+      dynamic "volume_mounts" {
+        for_each = local.app_mounted_secrets
+
+        content {
+          name       = volume_mounts.value.secret_id
+          mount_path = volume_mounts.value.mount_path
+        }
+      }
+
       startup_probe {
         failure_threshold = 1
         period_seconds    = 240
@@ -155,6 +173,23 @@ resource "google_cloud_run_v2_service" "discord_service" {
 
         tcp_socket {
           port = var.container_port
+        }
+      }
+    }
+
+    dynamic "volumes" {
+      for_each = local.app_mounted_secrets
+
+      content {
+        name = volumes.value.secret_id
+
+        secret {
+          secret = volumes.value.secret_id
+
+          items {
+            path    = volumes.value.file_name
+            version = "latest"
+          }
         }
       }
     }

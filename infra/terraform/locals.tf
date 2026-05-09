@@ -5,6 +5,26 @@ locals {
     DISCORD_CLIENT_SECRET = "discord-client-secret"
     DISCORD_GUILD_ID      = "discord-guild-id"
     SESSION_SECRET_KEY    = "session-secret-key"
+    OPENAI_API_KEY        = "openai-api-key"
+  }
+
+  # Secret Manager secrets that are mounted into the container as files
+  # (rather than injected as env vars). The secret resources themselves are
+  # created out-of-band via gcloud; Terraform only owns the Cloud Run mount
+  # and the env var that points to the mounted file path.
+  app_mounted_secrets = {
+    credentials = {
+      secret_id  = "google-oauth-credentials"
+      mount_path = "/secrets/oauth-credentials"
+      file_name  = "credentials.json"
+      env_var    = "GOOGLE_OAUTH_CREDENTIALS_PATH"
+    }
+    token = {
+      secret_id  = "google-oauth-token"
+      mount_path = "/secrets/oauth-token"
+      file_name  = "token.json"
+      env_var    = "GOOGLE_OAUTH_TOKEN_PATH"
+    }
   }
 
   common_labels = {

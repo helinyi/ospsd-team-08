@@ -108,6 +108,7 @@ ipython_config.py
 
 # Terraform
 **/.terraform/*
+terraform.tfvars
 *.tfstate
 *.tfstate.*
 crash.log

@@ -6,13 +6,16 @@ import json
 import os
 from typing import TYPE_CHECKING, Any, cast
 
-from ai_client_api import AIClient
+from ai_client_api import AIClient, ToolLoopExhaustedError
 from chat_client_api import get_client
 from openai import OpenAI
 
 from openai_ai_client_impl.tools import build_openai_tools, get_tool_handlers
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from calendar_client_api import Client as CalendarClient
     from chat_client_api import ChatClient
     from openai.types.chat.chat_completion_message import ChatCompletionMessage
 
@@ -20,10 +23,14 @@ if TYPE_CHECKING:
 class OpenAIAIClient(AIClient):
     """OpenAI-backed AI client with tool calling over the shared chat API."""
 
+    MAX_TOOL_ITERATIONS = 5  # Maximum number of tool-calling iterations
+
     def __init__(
         self,
         chat_client: ChatClient | None = None,
         model: str = "gpt-4o-mini",
+        extra_tool_handlers: dict[str, Callable[..., str]] | None = None,
+        calendar_client: CalendarClient | None = None,
     ) -> None:
         """Initialize the AI client.
 
@@ -31,6 +38,10 @@ class OpenAIAIClient(AIClient):
             chat_client: Optional chat client implementation. If omitted,
                 the registered shared chat client is used.
             model: OpenAI model name.
+            extra_tool_handlers: Optional additional tool handlers for
+                cross-vertical actions (e.g. calendar tools).
+            calendar_client: Optional calendar client for cross-vertical
+                calendar tool actions.
 
         Raises:
             ValueError: If OPENAI_API_KEY is not set.
@@ -45,7 +56,10 @@ class OpenAIAIClient(AIClient):
         self._chat_client = chat_client if chat_client is not None else get_client()
         self._model = model
         self._tools = build_openai_tools()
-        self._tool_handlers = get_tool_handlers(self._chat_client)
+        self._tool_handlers = {
+            **get_tool_handlers(self._chat_client, calendar_client=calendar_client),
+            **(extra_tool_handlers or {}),
+        }
 
     def run(
         self,
@@ -87,7 +101,7 @@ class OpenAIAIClient(AIClient):
 
         messages.append({"role": "user", "content": user_input})
 
-        for _ in range(5):
+        for _ in range(self.MAX_TOOL_ITERATIONS):
             response = self._client.chat.completions.create(
                 model=self._model,
                 messages=cast("Any", messages),
@@ -119,7 +133,8 @@ class OpenAIAIClient(AIClient):
                     }
                 )
 
-        return "I could not complete the request after multiple tool-calling steps."
+        msg = f"AI tool-calling loop exhausted after {self.MAX_TOOL_ITERATIONS} iterations."
+        raise ToolLoopExhaustedError(msg)
 
     def _execute_tool_call(self, tool_name: str, raw_arguments: str | None) -> str:
         """Execute a single tool call and return its serialized result.
@@ -137,8 +152,12 @@ class OpenAIAIClient(AIClient):
 
         try:
             parsed_arguments = self._parse_tool_arguments(raw_arguments)
-            return self._tool_handlers[tool_name](**parsed_arguments)
         except (TypeError, ValueError, json.JSONDecodeError) as exc:
+            return json.dumps({"error": str(exc)})
+
+        try:
+            return self._tool_handlers[tool_name](**parsed_arguments)
+        except Exception as exc:  # noqa: BLE001
             return json.dumps({"error": str(exc)})
 
     @staticmethod

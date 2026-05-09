@@ -89,10 +89,18 @@ jobs:
             uv run pytest components/discord_client_impl/tests/ \
               components/discord_service/tests/ \
               components/chat_client_adapter/tests/ \
+              components/openai_ai_client_impl/tests/ \
+              components/calendar_integration/tests/ \
+              components/ai_client_api/tests/ \
+              components/google_calendar_adapter/tests/ \
               --junitxml=test-results/unit/results.xml \
               --cov=discord_client_impl \
               --cov=discord_service \
               --cov=chat_client_adapter \
+              --cov=openai_ai_client_impl \
+              --cov=calendar_integration \
+              --cov=ai_client_api \
+              --cov=google_calendar_adapter \
               --cov-report=xml:coverage.xml \
               --cov-report=html:htmlcov
       - run:
@@ -102,7 +110,6 @@ jobs:
             uv run pytest tests/ \
               --junitxml=test-results/integration/results.xml \
               --cov=discord_client_impl \
-              --cov=chat_client_api \
               --cov-append \
               --cov-report=xml:coverage.xml \
               --cov-report=html:htmlcov
@@ -209,6 +216,7 @@ jobs:
             seed_secret "discord-client-secret" "DISCORD_CLIENT_SECRET"
             seed_secret "discord-guild-id" "DISCORD_GUILD_ID"
             seed_secret "session-secret-key" "SESSION_SECRET_KEY"
+            seed_secret "openai-api-key" "OPENAI_API_KEY"
       - run:
           name: Terraform apply Cloud Run infrastructure
           command: |

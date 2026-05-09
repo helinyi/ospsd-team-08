@@ -9,7 +9,7 @@ import calendar_client_api
 from googleapiclient.discovery import build
 
 from google_calendar_adapter.auth import get_credentials
-from google_calendar_adapter.event_impl import GoogleCalendarEvent
+from google_calendar_adapter.event_impl import event_from_google
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
 
 _NOT_CONNECTED_MSG = "Client is not connected. Call connect() first."
+
 
 class GoogleCalendarClient(calendar_client_api.Client):
     """Google Calendar-backed implementation of the shared calendar API."""
@@ -46,11 +47,39 @@ class GoogleCalendarClient(calendar_client_api.Client):
         self._service = build("calendar", "v3", credentials=creds)
         self._tasks_service = build("tasks", "v1", credentials=creds)
 
-    def _require_calendar_service(self) -> Any: # noqa: ANN401
+    def _require_calendar_service(self) -> Any:  # noqa: ANN401
         """Return the connected calendar service or raise if not connected."""
         if not self._service:
             raise RuntimeError(_NOT_CONNECTED_MSG)
         return self._service
+
+    def list_events(
+            self,
+            start: datetime,
+            end: datetime,
+    ) -> list[calendar_client_api.Event]:
+        """Return events within [start, end)."""
+        svc = self._require_calendar_service()
+        events: list[calendar_client_api.Event] = []
+        page_token: str | None = None
+
+        while True:
+            response = svc.events().list(
+                calendarId=self.calendar_id,
+                timeMin=start.isoformat(),
+                timeMax=end.isoformat(),
+                singleEvents=True,
+                orderBy="startTime",
+                pageToken=page_token,
+            ).execute()
+
+            events.extend(event_from_google(raw) for raw in response.get("items", []))
+
+            page_token = response.get("nextPageToken")
+            if not page_token:
+                break
+
+        return events
 
     def get_event(self, event_id: str) -> calendar_client_api.Event:
         """Fetch a single event by its ID."""
@@ -59,66 +88,83 @@ class GoogleCalendarClient(calendar_client_api.Client):
             calendarId=self.calendar_id,
             eventId=event_id,
         ).execute()
-        return GoogleCalendarEvent(response)
+        return event_from_google(response)
 
     def create_event(
             self,
-            event: calendar_client_api.Event,
+            title: str,
+            start_time: datetime,
+            end_time: datetime,
+            description: str = "",
+            location: str | None = None,
     ) -> calendar_client_api.Event:
         """Create a new calendar event."""
-        raise NotImplementedError
+        svc = self._require_calendar_service()
+        body: dict[str, Any] = {
+            "summary": title,
+            "start": {
+                "dateTime": start_time.isoformat(),
+                "timeZone": "UTC",
+            },
+            "end": {
+                "dateTime": end_time.isoformat(),
+                "timeZone": "UTC",
+            },
+        }
+        if description:
+            body["description"] = description
+        if location:
+            body["location"] = location
 
-    def update_event(
+        response = svc.events().insert(
+            calendarId=self.calendar_id,
+            body=body,
+        ).execute()
+        return event_from_google(response)
+
+    def update_event(  # noqa: PLR0913
             self,
-            event: calendar_client_api.Event,
+            event_id: str,
+            *,
+            title: str | None = None,
+            start_time: datetime | None = None,
+            end_time: datetime | None = None,
+            description: str | None = None,
+            location: str | None = None,
     ) -> calendar_client_api.Event:
-        """Update an existing calendar event."""
+        """Update fields on an existing event."""
         raise NotImplementedError
 
     def delete_event(self, event_id: str) -> None:
         """Delete a calendar event by its ID."""
         raise NotImplementedError
 
-    def get_events(
-            self,
-            start_time: datetime,
-            end_time: datetime,
-    ) -> Iterator[calendar_client_api.Event]:
-        """Yield events within the given time range."""
-        svc = self._require_calendar_service()
-        page_token = None
-
-        while True:
-            events_result = svc.events().list(
-                calendarId=self.calendar_id,
-                timeMin=start_time.isoformat(),
-                timeMax=end_time.isoformat(),
-                singleEvents=True,
-                orderBy="startTime",
-                pageToken=page_token,
-            ).execute()
-
-            for event in events_result.get("items", []):
-                yield GoogleCalendarEvent(event)
-
-            page_token = events_result.get("nextPageToken")
-            if not page_token:
-                break
-
     def from_raw_data(self, raw_data: str) -> calendar_client_api.Event:
         """Build an event object from raw JSON data."""
-        data = json.loads(raw_data)
-        return GoogleCalendarEvent(data)
+        return event_from_google(json.loads(raw_data))
 
     def get_task(self, task_id: str) -> calendar_client_api.Task:
         """Fetch a single task by its ID."""
         raise NotImplementedError
 
-    def create_task(self, task: calendar_client_api.Task) -> calendar_client_api.Task:
+    def create_task(
+            self,
+            title: str,
+            due: datetime | None = None,
+            description: str | None = None,
+    ) -> calendar_client_api.Task:
         """Create a new task."""
         raise NotImplementedError
 
-    def update_task(self, task: calendar_client_api.Task) -> calendar_client_api.Task:
+    def update_task(
+            self,
+            task_id: str,
+            *,
+            title: str | None = None,
+            due: datetime | None = None,
+            description: str | None = None,
+            is_completed: bool | None = None,
+    ) -> calendar_client_api.Task:
         """Update an existing task."""
         raise NotImplementedError
 
