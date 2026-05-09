@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-import secrets as _secrets
+import secrets as _secrets  # pragma: no cover
 from datetime import UTC, datetime
 from typing import Annotated
 
@@ -37,7 +37,7 @@ Instrumentator().instrument(app).expose(app)    # pragma: no cover
 
 secret_key = os.environ.get("SESSION_SECRET_KEY")
 if not secret_key:
-    secret_key = _secrets.token_urlsafe(32)
+    secret_key = _secrets.token_urlsafe(32)  # pragma: no cover
 
 app.add_middleware(SessionMiddleware, secret_key=secret_key)
 

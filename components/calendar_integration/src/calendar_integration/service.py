@@ -12,10 +12,10 @@ if TYPE_CHECKING:   # pragma: no cover
     from calendar_client_api.event import Event
 
 
-def get_tomorrow_time_range(now: datetime) -> tuple[datetime, datetime]:
-    """Return the start and end of the next day."""
-    tomorrow = now.astimezone(UTC).date() + timedelta(days=1)
-    start = datetime.combine(tomorrow, datetime.min.time(), tzinfo=UTC)
+def get_tomorrow_time_range(now: datetime, days: int = 1) -> tuple[datetime, datetime]:
+    """Return the start and end of a future day (default: tomorrow)."""
+    future = now.astimezone(UTC).date() + timedelta(days=days)
+    start = datetime.combine(future, datetime.min.time(), tzinfo=UTC)
     end = start + timedelta(days=1)
     return start, end
 

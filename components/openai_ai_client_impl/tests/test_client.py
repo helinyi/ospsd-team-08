@@ -174,3 +174,30 @@ def test_run_with_context(monkeypatch: pytest.MonkeyPatch) -> None:
 
     result = ai_client.run("hello", context={"key": "value"})
     assert result == "Done."
+
+def test_run_with_extra_tool_handlers(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test that extra_tool_handlers are merged into tool handlers."""
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    extra = {"custom_tool": lambda: json.dumps({"result": "custom"})}
+    ai_client = OpenAIAIClient(chat_client=FakeChatClient(), extra_tool_handlers=extra)
+    assert "custom_tool" in ai_client._tool_handlers
+
+def test_run_raises_tool_loop_exhausted(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test that ToolLoopExhaustedError is raised after max iterations."""
+    import pytest
+    from ai_client_api import ToolLoopExhaustedError
+
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+
+    class InfiniteToolCompletions:
+        def create(self, *args: Any, **kwargs: Any) -> FakeResponse:
+            return FakeResponse(FakeMessage(tool_calls=[FakeToolCall("get_channels", {})]))
+
+    class InfiniteChat:
+        completions = InfiniteToolCompletions()
+
+    ai_client = OpenAIAIClient(chat_client=FakeChatClient())
+    ai_client._client = cast("Any", type("C", (), {"chat": InfiniteChat()})())
+
+    with pytest.raises(ToolLoopExhaustedError):
+        ai_client.run("keep calling tools")
