@@ -9,6 +9,7 @@ from typing import Annotated
 
 import discord_client_impl  # noqa: F401
 import google_calendar_adapter  # noqa: F401
+import openai_ai_client_impl  # noqa: F401
 import requests
 import uvicorn
 from ai_client_api import ToolLoopExhaustedError
