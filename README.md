@@ -116,7 +116,8 @@ bash scripts/dev-setup-calendar.sh      # writes credentials.json + token.json
 
 Both files are gitignored. If you skip this step, every other endpoint still
 works; only `/calendar/*` will return 503 with a "credentials file not found"
-message until you run the script. Re-run the script after secrets are rotated.
+message until you run the script. The script skips files that already exist —
+after secrets are rotated, re-run with `--force` to overwrite local copies.
 
 ---
 
