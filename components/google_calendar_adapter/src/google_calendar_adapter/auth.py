@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
 from pathlib import Path
 
@@ -54,12 +55,10 @@ def get_credentials(
             )
             creds = flow.run_local_server(port=0)
 
-        try:
+        # Cloud Run secret mounts are read-only; the refresh_token in the
+        # mounted token.json is unchanged, so the next request can refresh
+        # again from in-memory creds without persistence.
+        with contextlib.suppress(OSError):
             Path(resolved_token).write_text(creds.to_json())
-        except OSError:
-            # Cloud Run secret mounts are read-only; the refresh_token in the
-            # mounted token.json is unchanged, so the next request can refresh
-            # again from in-memory creds without persistence.
-            pass
 
     return creds
