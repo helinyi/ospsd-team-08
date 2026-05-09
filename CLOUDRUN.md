@@ -231,3 +231,6 @@ Secret values are set in CircleCI and copied into Secret Manager during deployme
 | `DISCORD_GUILD_ID` | Target Discord guild (server) ID |
 | `DISCORD_REDIRECT_URI` | OAuth callback URL (`https://discord-service-122083288286.us-east4.run.app/auth/callback`) |
 | `SESSION_SECRET_KEY` | Secret key for signed FastAPI session cookies |
+| `OPENAI_API_KEY` | OpenAI API key for AI client integration |
+| `GOOGLE_OAUTH_CREDENTIALS_PATH` | Path to Google OAuth credentials for calendar integration |
+| `GOOGLE_OAUTH_TOKEN_PATH` | Path to Google OAuth token for calendar integration |

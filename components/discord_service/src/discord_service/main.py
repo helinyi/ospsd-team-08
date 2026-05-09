@@ -28,7 +28,7 @@ from starlette.middleware.sessions import SessionMiddleware
 load_dotenv()
 
 app = FastAPI()
-Instrumentator().instrument(app).expose(app)
+Instrumentator().instrument(app).expose(app)    # pragma: no cover
 
 secret_key = os.environ.get("SESSION_SECRET_KEY", "dev-secret-key")
 app.add_middleware(SessionMiddleware, secret_key=secret_key)

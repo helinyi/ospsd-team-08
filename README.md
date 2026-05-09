@@ -1,7 +1,6 @@
 # CS-GY-9223 Open Source — Team 8
 
-A modular chat client architecture built on Discord, demonstrating clean component separation, dependency injection, OAuth 2.0, and microservice deployment.
-
+A modular chat client architecture built on Discord, demonstrating clean component separation, dependency injection, OAuth 2.0, microservice deployment, AI tool calling, and cross-vertical calendar integration.
 ---
 
 ## Team
@@ -35,6 +34,14 @@ discord_service          ← FastAPI microservice (deployed to Google Cloud Run)
 discord_service_api_client  ← Auto-generated type-safe HTTP client
         ↑
 discord_adapter          ← Adapter implementing ChatClient via the service
+
+ai_client_api            ← Abstract AI client interface
+↑
+openai_ai_client_impl    ← OpenAI implementation with tool calling
+
+calendar_integration     ← Google Calendar cross-vertical integration
+↑
+google_calendar_adapter  ← Google Calendar API adapter
 ```
 
 Both `discord_client_impl` and `discord_adapter` implement the same `ChatClient` interface — swapping between them requires no changes to consumer code.
@@ -53,6 +60,10 @@ API docs:
 https://discord-service-122083288286.us-east4.run.app/docs
 ```
 
+Health check:
+```
+https://discord-service-122083288286.us-east4.run.app/health
+```
 ---
 
 ## Prerequisites
@@ -89,6 +100,7 @@ DISCORD_CLIENT_ID=your_client_id
 DISCORD_CLIENT_SECRET=your_client_secret
 DISCORD_REDIRECT_URI=http://localhost:8000/auth/callback
 SESSION_SECRET_KEY=any-random-string
+OPENAI_API_KEY=your_openai_api_key
 ```
 
 ---
@@ -106,7 +118,41 @@ uv run mypy components/
 ```
 
 ---
+## Dependency Injection Usage
 
+```python
+# Using local Discord implementation
+import discord_client_impl
+from chat_client_api import get_client
+
+client = get_client()
+channels = client.get_channels()
+
+# Using remote service via adapter
+import chat_client_adapter
+from chat_client_api import get_client
+
+client = get_client()
+channels = client.get_channels()  # same code, different implementation
+```
+
+---
+
+## AI Client Usage
+
+```python
+import discord_client_impl
+from chat_client_api import get_client
+from openai_ai_client_impl.client import OpenAIAIClient
+
+chat_client = get_client()
+ai = OpenAIAIClient(chat_client=chat_client)
+
+response = ai.run("What channels are available?")
+print(response)
+```
+
+---
 ## Infrastructure as Code
 
 Infrastructure is managed with Terraform in `infra/terraform`.
@@ -128,7 +174,7 @@ terraform fmt -check -recursive infra/terraform
 terraform -chdir=infra/terraform init -backend=false
 terraform -chdir=infra/terraform validate
 ```
-
+For full bootstrap instructions see [CLOUDRUN.md](CLOUDRUN.md).
 ---
 
 ## Running the Service Locally
@@ -140,25 +186,6 @@ Then visit:
 - `http://localhost:8000/health` — health check
 - `http://localhost:8000/docs` — API documentation
 - `http://localhost:8000/auth/login` — start OAuth 2.0 flow
-
----
-
-## Dependency Injection Usage
-```python
-# Using local library
-import discord_client_impl
-from chat_client_api import get_client
-
-client = get_client()
-channels = client.get_channels()
-
-# Using remote service (via adapter)
-import discord_adapter
-from chat_client_api import get_client
-
-client = get_client()
-channels = client.get_channels()  # same code, different implementation
-```
 
 ---
 
@@ -177,18 +204,24 @@ http://127.0.0.1:8000
 ```
 .
 ├── components/
-│   ├── discord_client_impl/       # Discord implementation + OAuth 2.0
-│   ├── discord_service/           # FastAPI microservice
+│   ├── ai_client_api/              # Abstract AI client interface
+│   ├── openai_ai_client_impl/      # OpenAI implementation with tool calling
+│   ├── calendar_integration/       # Google Calendar cross-vertical integration
+│   ├── google_calendar_adapter/    # Google Calendar API adapter
+│   ├── discord_client_impl/        # Discord implementation + OAuth 2.0
+│   ├── discord_service/            # FastAPI microservice
 │   ├── discord_service_api_client/ # Auto-generated API client
-│   └── discord_adapter/           # Service client adapter
+│   └── chat_client_adapter/        # Service client adapter
 ├── tests/
 │   ├── e2e/                       # End-to-end tests
 │   └── integration/               # Integration tests
 ├── infra/
 │   └── terraform/                  # Google Cloud Run IaC
 ├── docs/                          # MkDocs documentation
+├── hw3-plan.md                     # HW3 shared API adaptation plan
+├── DESIGN.md                       # Architecture and design decisions
+├── CLOUDRUN.md                     # Cloud Run deployment guide
 ├── contributing.md
-├── design.md
 ├── mkdocs.yml
 ├── pyproject.toml
 └── README.md
