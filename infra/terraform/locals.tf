@@ -5,6 +5,7 @@ locals {
     DISCORD_CLIENT_SECRET = "discord-client-secret"
     DISCORD_GUILD_ID      = "discord-guild-id"
     SESSION_SECRET_KEY    = "session-secret-key"
+    OPENAI_API_KEY        = "openai-api-key"
   }
 
   # Secret Manager secrets that are mounted into the container as files

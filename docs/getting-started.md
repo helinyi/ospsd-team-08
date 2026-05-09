@@ -30,6 +30,16 @@ SESSION_SECRET_KEY=any-random-string
 OPENAI_API_KEY=your_openai_api_key
 ```
 ---
+### Google Calendar Setup
+
+To enable `/calendar/*` endpoints locally:
+
+```bash
+gcloud auth login  # one time per machine
+bash scripts/dev-setup-calendar.sh  # writes credentials.json + token.json
+```
+
+Both files are gitignored. Without this step, only `/calendar/*` returns 503 — all other endpoints work normally.
 
 ## Running Tests
 
@@ -48,7 +58,13 @@ uv run uvicorn discord_service.main:app --reload
 - `http://localhost:8000/health` — health check
 - `http://localhost:8000/docs` — API docs
 - `http://localhost:8000/auth/login` — Discord OAuth flow
+- `http://localhost:8000/auth/callback` — OAuth callback
+- `http://localhost:8000/users/me` — authenticated Discord user info
+- `http://localhost:8000/channels` — list all channels
+- `http://localhost:8000/channels/{channel_id}/messages` — get recent messages
 - `http://localhost:8000/calendar/tomorrow` — tomorrow's calendar events
+- `http://localhost:8000/calendar/events` — events for a time range
+- `http://localhost:8000/ai/chat` — AI-powered chat with tool calling
 - `http://localhost:8000/metrics` — Prometheus metrics
 
 ---
