@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from google_calendar_adapter.client import get_connected_calendar_client
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:   # pragma: no cover
     from calendar_client_api import Client
 
 

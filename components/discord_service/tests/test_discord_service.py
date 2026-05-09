@@ -330,8 +330,8 @@ def test_get_calendar_events_success(mock_discord_client: MagicMock) -> None:
 
 def test_ai_chat_success(mock_discord_client: MagicMock) -> None:
     """POST /ai/chat should return AI response."""
-    with patch("discord_service.main.OpenAIAIClient") as mock_ai:
-        mock_ai.return_value.run.return_value = "Here are your channels!"
+    with patch("discord_service.main.get_ai_client") as mock_get_ai:
+        mock_get_ai.return_value.run.return_value = "Here are your channels!"
         response = client.post("/ai/chat", json={"user_input": "show channels"})
     assert response.status_code == 200
     assert response.json()["response"] == "Here are your channels!"
@@ -340,15 +340,15 @@ def test_ai_chat_success(mock_discord_client: MagicMock) -> None:
 def test_ai_chat_tool_loop_exhausted(mock_discord_client: MagicMock) -> None:
     """POST /ai/chat should return 503 when tool loop exhausted."""
     from ai_client_api import ToolLoopExhaustedError
-    with patch("discord_service.main.OpenAIAIClient") as mock_ai:
-        mock_ai.return_value.run.side_effect = ToolLoopExhaustedError("exhausted")
+    with patch("discord_service.main.get_ai_client") as mock_get_ai:
+        mock_get_ai.return_value.run.side_effect = ToolLoopExhaustedError("exhausted")
         response = client.post("/ai/chat", json={"user_input": "show channels"})
     assert response.status_code == 503
 
 
 def test_ai_chat_error(mock_discord_client: MagicMock) -> None:
     """POST /ai/chat should return 500 on unexpected error."""
-    with patch("discord_service.main.OpenAIAIClient") as mock_ai:
-        mock_ai.return_value.run.side_effect = RuntimeError("unexpected")
+    with patch("discord_service.main.get_ai_client") as mock_get_ai:
+        mock_get_ai.return_value.run.side_effect = RuntimeError("unexpected")
         response = client.post("/ai/chat", json={"user_input": "show channels"})
     assert response.status_code == 500

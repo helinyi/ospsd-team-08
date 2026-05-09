@@ -105,6 +105,14 @@ class GoogleCalendarClient(calendar_client_api.Client):
             if not page_token:
                 break
 
+    def list_events(
+        self,
+        start_time: datetime,
+        end_time: datetime,
+    ) -> list[calendar_client_api.Event]:
+        """Return a list of events within the given time range."""
+        return list(self.get_events(start_time, end_time))
+
     def from_raw_data(self, raw_data: str) -> calendar_client_api.Event:
         """Build an event object from raw JSON data."""
         data = json.loads(raw_data)
