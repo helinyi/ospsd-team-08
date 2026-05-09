@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from google_calendar_adapter.client import get_connected_calendar_client
 
@@ -172,7 +172,7 @@ def _create_calendar_event(  # noqa: PLR0913
     location: str | None = None,
 ) -> str:
     """Create a Google Calendar event and return a serialized result."""
-    client = _get_calendar_client(calendar_client)
+    client = cast("Any", _get_calendar_client(calendar_client))
 
     start_dt = datetime.fromisoformat(start_time)
     end_dt = datetime.fromisoformat(end_time)
