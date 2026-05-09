@@ -1,59 +1,35 @@
-"""Event wrapper for Google Calendar API responses."""
+"""Adapt Google Calendar API event payloads to the shared Event dataclass."""
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
+from typing import Any
 
-from calendar_client_api.event import Event
+from ospsd_calendar_api import Event
 
 
-class GoogleCalendarEvent(Event):
-    """Concrete event wrapper around raw Google Calendar event data."""
+def _parse_datetime(node: object) -> datetime:
+    """Parse a Google Calendar start/end node into a tz-aware datetime."""
+    if not isinstance(node, dict):
+        msg = "Event start/end must be a dict"
+        raise TypeError(msg)
+    if "dateTime" in node:
+        return datetime.fromisoformat(str(node["dateTime"]))
+    if "date" in node:
+        return datetime.fromisoformat(f"{node['date']}T00:00:00").replace(tzinfo=UTC)
+    msg = "Event start/end has neither 'dateTime' nor 'date'"
+    raise ValueError(msg)
 
-    def __init__(self, raw: dict[str, object]) -> None:
-        """Store the raw Google Calendar event payload."""
-        self._raw = raw
 
-    @property
-    def id(self) -> str:
-        """Return the event identifier."""
-        return str(self._raw.get("id", ""))
-
-    @property
-    def title(self) -> str:
-        """Return the event title."""
-        return str(self._raw.get("summary", ""))
-
-    @property
-    def start_time(self) -> datetime:
-        """Return the event start time."""
-        start = self._raw.get("start", {})
-        if isinstance(start, dict) and "dateTime" in start:
-            return datetime.fromisoformat(str(start["dateTime"]))
-        if isinstance(start, dict) and "date" in start:
-            return datetime.fromisoformat(f"{start['date']}T00:00:00")
-        msg = "Missing start time"
-        raise ValueError(msg)
-
-    @property
-    def end_time(self) -> datetime:
-        """Return the event end time."""
-        end = self._raw.get("end", {})
-        if isinstance(end, dict) and "dateTime" in end:
-            return datetime.fromisoformat(str(end["dateTime"]))
-        if isinstance(end, dict) and "date" in end:
-            return datetime.fromisoformat(f"{end['date']}T00:00:00")
-        msg = "Missing end time"
-        raise ValueError(msg)
-
-    @property
-    def location(self) -> str | None:
-        """Return the event location, if present."""
-        value = self._raw.get("location")
-        return None if value is None else str(value)
-
-    @property
-    def description(self) -> str | None:
-        """Return the event description, if present."""
-        value = self._raw.get("description")
-        return None if value is None else str(value)
+def event_from_google(raw: dict[str, Any]) -> Event:
+    """Convert a Google Calendar API event payload into a shared Event."""
+    description = raw.get("description")
+    location = raw.get("location")
+    return Event(
+        id=str(raw.get("id", "")),
+        title=str(raw.get("summary", "")),
+        start_time=_parse_datetime(raw.get("start")),
+        end_time=_parse_datetime(raw.get("end")),
+        description=str(description) if description is not None else None,
+        location=str(location) if location is not None else None,
+    )
