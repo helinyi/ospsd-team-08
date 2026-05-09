@@ -99,28 +99,6 @@ class FakeCalendarEvents:
             }
         )
 
-def insert( # type: ignore[no-untyped-def]
-    self,
-    **kwargs: object,
-) -> FakeCalendarRequest:
-    calendar_id = str(kwargs["calendarId"])
-    body = kwargs["body"]
-    assert isinstance(body, dict)
-
-    self.last_calendar_id = calendar_id
-    self.last_body = body
-
-    return FakeCalendarRequest(
-        {
-            "id": "event-1",
-            "summary": body["summary"],
-            "start": body["start"],
-            "end": body["end"],
-            "description": body.get("description"),
-            "location": body.get("location"),
-        }
-    )
-
 class FakeCalendarService:
     def __init__(self) -> None:
         self.events_resource = FakeCalendarEvents()
