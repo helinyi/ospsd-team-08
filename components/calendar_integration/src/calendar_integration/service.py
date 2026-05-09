@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:   # pragma: no cover
     from collections.abc import Iterable
 
+    from calendar_client_api import Event
     from calendar_client_api.client import Client
-    from calendar_client_api.event import Event
 
 
 def get_tomorrow_time_range(now: datetime, days: int = 1) -> tuple[datetime, datetime]:
@@ -39,7 +39,7 @@ def get_events_message(
         end_time: datetime,
 ) -> str:
     """Fetch events from the calendar API and format them for chat."""
-    events = calendar_client.get_events(start_time, end_time)
+    events = calendar_client.list_events(start_time, end_time)
     return format_events(events)
 
 
