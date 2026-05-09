@@ -99,7 +99,28 @@ class GoogleCalendarClient(calendar_client_api.Client):
             location: str | None = None,
     ) -> calendar_client_api.Event:
         """Create a new calendar event."""
-        raise NotImplementedError
+        svc = self._require_calendar_service()
+        body: dict[str, Any] = {
+            "summary": title,
+            "start": {
+                "dateTime": start_time.isoformat(),
+                "timeZone": "UTC",
+            },
+            "end": {
+                "dateTime": end_time.isoformat(),
+                "timeZone": "UTC",
+            },
+        }
+        if description:
+            body["description"] = description
+        if location:
+            body["location"] = location
+
+        response = svc.events().insert(
+            calendarId=self.calendar_id,
+            body=body,
+        ).execute()
+        return event_from_google(response)
 
     def update_event(  # noqa: PLR0913
             self,
