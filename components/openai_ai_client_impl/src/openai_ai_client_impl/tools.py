@@ -7,7 +7,6 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, cast
 
 from google_calendar_adapter.client import get_connected_calendar_client
-
 from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:  # pragma: no cover
