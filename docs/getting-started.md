@@ -103,6 +103,11 @@ print(response)
 
 ---
 
+## Telemetry
+Live Grafana dashboard: [https://aw3950.grafana.net/public-dashboards/11a16d893f7e4302acfaf12feda6a33e](https://aw3950.grafana.net/public-dashboards/11a16d893f7e4302acfaf12feda6a33e)
+
+---
+
 ## Building Documentation
 
 ```bash

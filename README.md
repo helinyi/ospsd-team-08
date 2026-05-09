@@ -247,6 +247,12 @@ Note: `chat_client_api` is now consumed as an external git dependency from the s
 
 ---
 
+## Telemetry Dashboard
+
+The Grafana dashboard of the metrics can be viewed [here](https://aw3950.grafana.net/public-dashboards/11a16d893f7e4302acfaf12feda6a33e).
+
+---
+
 ## License
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
