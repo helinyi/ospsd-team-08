@@ -104,21 +104,15 @@ jobs:
               --cov-report=xml:coverage.xml \
               --cov-report=html:htmlcov
       - run:
-        name: Run integration & e2e tests
-        command: |
-          mkdir -p test-results/integration
-          uv run pytest tests/ \
-            --junitxml=test-results/integration/results.xml \
-            --cov=discord_client_impl \
-            --cov=discord_service \
-            --cov=chat_client_adapter \
-            --cov=openai_ai_client_impl \
-            --cov=calendar_integration \
-            --cov=ai_client_api \
-            --cov=google_calendar_adapter \
-            --cov-append \
-            --cov-report=xml:coverage.xml \
-            --cov-report=html:htmlcov
+          name: Run integration & e2e tests
+          command: |
+            mkdir -p test-results/integration
+            uv run pytest tests/ \
+              --junitxml=test-results/integration/results.xml \
+              --cov=discord_client_impl \
+              --cov-append \
+              --cov-report=xml:coverage.xml \
+              --cov-report=html:htmlcov
       - store_test_results:
           path: test-results
       - store_artifacts:
