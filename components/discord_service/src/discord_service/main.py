@@ -27,13 +27,34 @@ from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
 from google_calendar_adapter import get_calendar_client as get_connected_calendar_client
 from openai_ai_client_impl.client import OpenAIAIClient
-from prometheus_fastapi_instrumentator import Instrumentator
+from prometheus_fastapi_instrumentator import Instrumentator, metrics
 from starlette.middleware.sessions import SessionMiddleware
 
 load_dotenv()
 
 app = FastAPI()
-Instrumentator().instrument(app).expose(app)    # pragma: no cover
+
+instrumentator = Instrumentator()
+
+instrumentator.add(
+    metrics.requests(
+        metric_name="requests_total",
+        metric_namespace="discord_service",
+        metric_subsystem="api",
+    )
+)
+
+instrumentator.add(
+    metrics.latency(
+        metric_name="request_latency_seconds",
+        metric_namespace="discord_service",
+        metric_subsystem="api",
+    )
+)
+
+instrumentator.instrument(
+    app, metric_namespace="discord_service", metric_subsystem="api"
+).expose(app)
 
 
 secret_key = os.environ.get("SESSION_SECRET_KEY")
