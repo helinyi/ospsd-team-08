@@ -77,7 +77,7 @@ class FakeCalendarEvents:
         self.last_calendar_id: str | None = None
         self.last_body: dict[str, object] | None = None
 
-    def insert(
+    def insert( # type: ignore[no-untyped-def]
         self,
         **kwargs: object,
     ) -> FakeCalendarRequest:
@@ -99,7 +99,7 @@ class FakeCalendarEvents:
             }
         )
 
-def insert(
+def insert( # type: ignore[no-untyped-def]
     self,
     **kwargs: object,
 ) -> FakeCalendarRequest:
