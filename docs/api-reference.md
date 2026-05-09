@@ -46,13 +46,44 @@ Return a `ChatClient` instance from the registered factory. Raises `RuntimeError
 ## AI Client Interface
 
 ### AIClient.run(user_input: str, context: dict | None = None) -> str
-Process a natural language request and return a response. Supports tool calling for domain actions.
+Process a natural language request and return a response. Supports tool calling.
 
-## Custom Exceptions
+### get_client() -> AIClient
+Returns the registered AI client implementation. Raises `RuntimeError` if none registered.
 
-- `ChatError` — base exception
-- `ChannelNotFoundError` — raised when a channel is not found
-- `MessageNotFoundError` — raised when a message is not found
+### register_client(factory: Callable[[], AIClient]) -> None
+Register a concrete `AIClient` factory.
+
+### ToolLoopExhaustedError
+Raised when the AI tool-calling loop exceeds `MAX_TOOL_ITERATIONS = 5`.
+
+## AI Tools
+
+| Tool | Description |
+|---|---|
+| `get_channels` | Lists all Discord channels |
+| `get_channel` | Gets a specific channel by ID |
+| `get_messages` | Fetches recent messages from a channel |
+| `send_message` | Sends a message to a channel |
+| `create_calendar_event` | Creates a Google Calendar event |
+| `schedule_meeting_for_message` | Fetches a Discord message and schedules a calendar meeting — true cross-vertical integration |
+
+## POST /ai/chat
+AI-powered chat endpoint with tool calling.
+
+**Request:**
+```json
+{"user_input": "What channels are available?"}
+```
+
+**Response:**
+```json
+{"response": "Here are the available channels: ..."}
+```
+
+**Errors:**
+- `503` — Tool loop exhausted after 5 iterations
+- `500` — Unexpected AI error
 
 ## Calendar Integration
 

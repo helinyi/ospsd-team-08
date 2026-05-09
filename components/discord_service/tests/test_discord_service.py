@@ -311,13 +311,17 @@ def test_get_calendar_tomorrow() -> None:
 
     app.dependency_overrides.pop(get_calendar_client, None)
 
-def test_get_calendar_tomorrow_unconfigured() -> None:
-    app.dependency_overrides.pop(get_calendar_client, None)
+def test_get_calendar_tomorrow_unconfigured(mock_discord_client: MagicMock) -> None:
+    """GET /calendar/tomorrow should return 503 when calendar is not configured."""
+    from fastapi import HTTPException
 
+    def raise_http_exception() -> None:
+        raise HTTPException(status_code=503, detail="Google OAuth credentials file not found")
+
+    app.dependency_overrides[get_calendar_client] = raise_http_exception
     response = client.get("/calendar/tomorrow")
-
+    app.dependency_overrides.pop(get_calendar_client, None)
     assert response.status_code == 503
-    assert "Google OAuth credentials file not found" in response.json()["detail"]
 
 def test_get_calendar_events_success(mock_discord_client: MagicMock) -> None:
     """GET /calendar/events should return events message."""

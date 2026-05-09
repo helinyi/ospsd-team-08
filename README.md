@@ -101,6 +101,9 @@ DISCORD_CLIENT_SECRET=your_client_secret
 DISCORD_REDIRECT_URI=http://localhost:8000/auth/callback
 SESSION_SECRET_KEY=any-random-string
 OPENAI_API_KEY=your_openai_api_key
+GOOGLE_OAUTH_CREDENTIALS_PATH=credentials.json
+GOOGLE_OAUTH_TOKEN_PATH=token.json
+GOOGLE_CALENDAR_ID=primary
 ```
 
 ---
@@ -141,13 +144,11 @@ channels = client.get_channels()  # same code, different implementation
 ## AI Client Usage
 
 ```python
-import discord_client_impl
-from chat_client_api import get_client
-from openai_ai_client_impl.client import OpenAIAIClient
+import discord_client_impl       # registers Discord as chat client
+import openai_ai_client_impl     # registers OpenAI as AI client
+from ai_client_api import get_client
 
-chat_client = get_client()
-ai = OpenAIAIClient(chat_client=chat_client)
-
+ai = get_client()
 response = ai.run("What channels are available?")
 print(response)
 ```

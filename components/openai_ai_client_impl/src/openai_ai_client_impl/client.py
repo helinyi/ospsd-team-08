@@ -15,6 +15,7 @@ from openai_ai_client_impl.tools import build_openai_tools, get_tool_handlers
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from calendar_client_api import Client as CalendarClient
     from chat_client_api import ChatClient
     from openai.types.chat.chat_completion_message import ChatCompletionMessage
 
@@ -29,6 +30,7 @@ class OpenAIAIClient(AIClient):
         chat_client: ChatClient | None = None,
         model: str = "gpt-4o-mini",
         extra_tool_handlers: dict[str, Callable[..., str]] | None = None,
+        calendar_client: CalendarClient | None = None,
     ) -> None:
         """Initialize the AI client.
 
@@ -38,6 +40,8 @@ class OpenAIAIClient(AIClient):
             model: OpenAI model name.
             extra_tool_handlers: Optional additional tool handlers for
                 cross-vertical actions (e.g. calendar tools).
+            calendar_client: Optional calendar client for cross-vertical
+                calendar tool actions.
 
         Raises:
             ValueError: If OPENAI_API_KEY is not set.
@@ -53,7 +57,7 @@ class OpenAIAIClient(AIClient):
         self._model = model
         self._tools = build_openai_tools()
         self._tool_handlers = {
-            **get_tool_handlers(self._chat_client),
+            **get_tool_handlers(self._chat_client, calendar_client=calendar_client),
             **(extra_tool_handlers or {}),
         }
 

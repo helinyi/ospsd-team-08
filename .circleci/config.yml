@@ -216,6 +216,7 @@ jobs:
             seed_secret "discord-client-secret" "DISCORD_CLIENT_SECRET"
             seed_secret "discord-guild-id" "DISCORD_GUILD_ID"
             seed_secret "session-secret-key" "SESSION_SECRET_KEY"
+            seed_secret "openai-api-key" "OPENAI_API_KEY"
       - run:
           name: Terraform apply Cloud Run infrastructure
           command: |

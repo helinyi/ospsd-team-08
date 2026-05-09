@@ -4,6 +4,7 @@ nav:
   - Home: index.md
   - Getting Started: getting-started.md
   - API Reference: api-reference.md
+  - Design: DESIGN.md
   - Implementation:
       - Discord Implementation: discord-implementation.md
       - Discord Service: discord-service.md
@@ -12,6 +13,6 @@ nav:
       - Cloud Run: CLOUDRUN.md
   - HW3:
       - Plan of Action: hw3-plan.md
-
+      
 theme:
   name: mkdocs

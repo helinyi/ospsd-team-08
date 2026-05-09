@@ -18,6 +18,10 @@ openapi-python-client generate --url https://discord-service-122083288286.us-eas
 - `GET /channels`
 - `GET /channels/{channel_id}/messages`
 - `POST /channels/{channel_id}/messages`
+- `GET /calendar/tomorrow`
+- `GET /calendar/events`
+- `POST /ai/chat`
+- `GET /metrics`
 
 ## Usage
 
