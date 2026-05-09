@@ -6,6 +6,9 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 
+class ToolLoopExhaustedError(Exception):
+    """Raised when the AI tool-calling loop exhausts its maximum iterations."""
+
 class AIClient(ABC):
     """Abstract contract for an AI client."""
 

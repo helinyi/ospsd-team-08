@@ -1,13 +1,17 @@
+site_name: OSPSD Team 08 Chat Client
+
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
   - API Reference: api-reference.md
   - Implementation:
       - Discord Implementation: discord-implementation.md
+      - Discord Service: discord-service.md
+      - Service API Client: discord-service-api-client.md
   - Deployment:
       - Cloud Run: CLOUDRUN.md
   - HW3:
       - Plan of Action: hw3-plan.md
 
 theme:
-  name: material
+  name: mkdocs

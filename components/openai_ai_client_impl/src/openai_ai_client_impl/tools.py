@@ -8,10 +8,35 @@ from typing import TYPE_CHECKING, Any, cast
 
 from google_calendar_adapter.client import get_connected_calendar_client
 
+from pydantic import BaseModel, Field
+
 if TYPE_CHECKING:  # pragma: no cover
     from collections.abc import Callable
 
     from chat_client_api import Channel, ChatClient, Message
+
+
+# --- Pydantic models for typed tool schemas ---
+
+class GetChannelArgs(BaseModel):
+    """Arguments for get_channel tool."""
+
+    channel_id: str = Field(description="The target channel ID.")
+
+
+class GetMessagesArgs(BaseModel):
+    """Arguments for get_messages tool."""
+
+    channel_id: str = Field(description="The target channel ID.")
+    limit: int = Field(default=10, description="Maximum number of messages to return.")
+    cursor: str | None = Field(default=None, description="Optional pagination cursor.")
+
+
+class SendMessageArgs(BaseModel):
+    """Arguments for send_message tool."""
+
+    channel_id: str = Field(description="The target channel ID.")
+    text: str = Field(description="The message content to send.")
 
 
 def build_openai_tools() -> list[dict[str, Any]]:
@@ -35,17 +60,7 @@ def build_openai_tools() -> list[dict[str, Any]]:
             "function": {
                 "name": "get_channel",
                 "description": "Get details for a specific channel by channel_id.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "channel_id": {
-                            "type": "string",
-                            "description": "The target channel ID.",
-                        }
-                    },
-                    "required": ["channel_id"],
-                    "additionalProperties": False,
-                },
+                "parameters": GetChannelArgs.model_json_schema(),
             },
         },
         {
@@ -53,26 +68,7 @@ def build_openai_tools() -> list[dict[str, Any]]:
             "function": {
                 "name": "get_messages",
                 "description": "Get recent messages from a channel.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "channel_id": {
-                            "type": "string",
-                            "description": "The target channel ID.",
-                        },
-                        "limit": {
-                            "type": "integer",
-                            "description": "Maximum number of messages to return.",
-                            "default": 10,
-                        },
-                        "cursor": {
-                            "type": ["string", "null"],
-                            "description": "Optional pagination cursor.",
-                        },
-                    },
-                    "required": ["channel_id"],
-                    "additionalProperties": False,
-                },
+                "parameters": GetMessagesArgs.model_json_schema(),
             },
         },
         {
@@ -80,21 +76,7 @@ def build_openai_tools() -> list[dict[str, Any]]:
             "function": {
                 "name": "send_message",
                 "description": "Send a message to a channel.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "channel_id": {
-                            "type": "string",
-                            "description": "The target channel ID.",
-                        },
-                        "text": {
-                            "type": "string",
-                            "description": "The message content to send.",
-                        },
-                    },
-                    "required": ["channel_id", "text"],
-                    "additionalProperties": False,
-                },
+                "parameters": SendMessageArgs.model_json_schema(),
             },
         },
         {

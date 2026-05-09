@@ -89,10 +89,14 @@ jobs:
             uv run pytest components/discord_client_impl/tests/ \
               components/discord_service/tests/ \
               components/chat_client_adapter/tests/ \
+              components/openai_ai_client_impl/tests/ \
+              components/calendar_integration/tests/ \
               --junitxml=test-results/unit/results.xml \
               --cov=discord_client_impl \
               --cov=discord_service \
               --cov=chat_client_adapter \
+              --cov=openai_ai_client_impl \
+              --cov=calendar_integration \
               --cov-report=xml:coverage.xml \
               --cov-report=html:htmlcov
       - run:
@@ -102,7 +106,6 @@ jobs:
             uv run pytest tests/ \
               --junitxml=test-results/integration/results.xml \
               --cov=discord_client_impl \
-              --cov=chat_client_api \
               --cov-append \
               --cov-report=xml:coverage.xml \
               --cov-report=html:htmlcov

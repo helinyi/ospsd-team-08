@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import os
+import secrets as _secrets  # pragma: no cover
 from datetime import UTC, datetime
 from typing import Annotated
 
 import discord_client_impl  # noqa: F401
+import google_calendar_adapter  # noqa: F401
 import requests
 import uvicorn
+from ai_client_api import ToolLoopExhaustedError
 from calendar_client_api.client import Client as CalendarClient  # noqa: TC002
 from calendar_integration.service import (
     get_events_message,
@@ -21,7 +24,7 @@ from discord_client_impl.auth import DiscordOAuthHandler
 from dotenv import load_dotenv
 from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
-from google_calendar_adapter.client import get_connected_calendar_client
+from google_calendar_adapter import get_calendar_client as get_connected_calendar_client
 from openai_ai_client_impl.client import OpenAIAIClient
 from prometheus_fastapi_instrumentator import Instrumentator
 from starlette.middleware.sessions import SessionMiddleware
@@ -29,9 +32,13 @@ from starlette.middleware.sessions import SessionMiddleware
 load_dotenv()
 
 app = FastAPI()
-Instrumentator().instrument(app).expose(app)
+Instrumentator().instrument(app).expose(app)    # pragma: no cover
 
-secret_key = os.environ.get("SESSION_SECRET_KEY", "dev-secret-key")
+
+secret_key = os.environ.get("SESSION_SECRET_KEY")
+if not secret_key:
+    secret_key = _secrets.token_urlsafe(32)  # pragma: no cover
+
 app.add_middleware(SessionMiddleware, secret_key=secret_key)
 
 
@@ -223,10 +230,10 @@ def ai_chat(
     try:
         ai_client = OpenAIAIClient(chat_client=client)
         response = ai_client.run(user_input)
-
+    except ToolLoopExhaustedError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
     except Exception as error:
         raise HTTPException(status_code=500, detail=str(error)) from error
-
     else:
         return {"response": response}
 

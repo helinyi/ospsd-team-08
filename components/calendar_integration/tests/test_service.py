@@ -122,6 +122,9 @@ class FakeCalendarClient(Client):
         if False:
             yield FakeTask()
 
+    def list_events(self, start_time: datetime, end_time: datetime) -> Iterator[Event]:
+        return self.get_events(start_time, end_time)
+
     def mark_task_completed(self, task_id: str) -> None:
         raise NotImplementedError
 
@@ -165,6 +168,9 @@ class EmptyCalendarClient(Client):
     def get_tasks(self, start_time: datetime, end_time: datetime) -> Iterator[Task]:
         if False:
             yield FakeTask()
+
+    def list_events(self, start_time: datetime, end_time: datetime) -> Iterator[Event]:
+        return iter([])  # empty iterator
 
     def mark_task_completed(self, task_id: str) -> None:
         raise NotImplementedError

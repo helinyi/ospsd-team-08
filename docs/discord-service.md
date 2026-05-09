@@ -1,71 +1,35 @@
 # Discord Service
 
-`discord_service` is the HW2 FastAPI deployment unit.
+`discord_service` is the FastAPI microservice that exposes Discord functionality over HTTP and wires in AI and calendar cross-vertical endpoints.
 
-## Current Endpoints
+## Endpoints
 
-- `GET /health`
-- `GET /auth/login`
-- `GET /auth/callback`
-- `GET /channels`
-- `POST /channels/{channel_id}/messages`
-- `GET /channels/{channel_id}/messages`
-
-## Endpoint Behavior
-
-- `/health`
-  - Returns service status
-  - Response: `{"status": "ok"}`
-
-- `/auth/login`
-  - Redirects the user to Discord OAuth authorization URL
-
-- `/auth/callback`
-  - Exchanges authorization code for access token
-  - Returns:
-    ```json
-    {
-      "access_token": "...",
-      "token_type": "Bearer"
-    }
-    ```
-
-- `/channels`
-  - Returns a list of channels from the Discord client
-
-- `/channels/{channel_id}/messages` (POST)
-  - Sends a message to a specific channel
-  - Request body:
-    ```json
-    {
-      "content": "message text"
-    }
-    ```
-
-- `/channels/{channel_id}/messages` (GET)
-  - Retrieves recent messages from a channel
-  - Query parameter:
-    - `limit` (default 10, max 100)
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/health` | Returns `{"status": "ok"}` |
+| GET | `/auth/login` | Redirects to Discord OAuth authorization |
+| GET | `/auth/callback` | Exchanges code for access token |
+| GET | `/users/me` | Returns authenticated Discord user info |
+| GET | `/channels` | Lists all text channels |
+| GET | `/channels/{channel_id}/messages` | Returns recent messages |
+| POST | `/channels/{channel_id}/messages` | Sends a message |
+| GET | `/calendar/tomorrow` | Returns tomorrow's Google Calendar events |
+| GET | `/calendar/events` | Returns events for a given time range |
+| GET | `/metrics` | Prometheus telemetry metrics |
 
 ## Dependency Injection
 
-The service uses FastAPI dependency injection:
-
-- `get_client()` provides a `DiscordClient`
-- `get_oauth_handler()` provides a `DiscordOAuthHandler`
-
-This allows tests to override dependencies and mock external API behavior.
+- `get_client()` — provides a `ChatClient` instance
+- `get_oauth_handler()` — provides a `DiscordOAuthHandler`
+- `get_calendar_client()` — provides a `CalendarClient` instance
 
 ## Error Handling
 
-- Invalid channel → `404 Not Found`
-- OAuth exchange failure → `400 Bad Request`
-- Discord API/runtime failure → `502 Bad Gateway`
-- Missing required parameters → `422 Unprocessable Entity`
-
-## Notes
-
-- OAuth flow is fully implemented using Authorization Code Flow
-- All endpoints are backed by the real Discord API via `DiscordClient`
-- Service is designed to be deployed and accessed remotely
-- OpenAPI specification is available at `/openapi.json`
+| Status | Meaning |
+|---|---|
+| 404 | Channel not found |
+| 400 | OAuth exchange failure |
+| 401 | Not authenticated |
+| 502 | Discord or external API error |
+| 503 | Calendar credentials not configured |
+| 422 | Missing or invalid request parameters |

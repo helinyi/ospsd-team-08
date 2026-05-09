@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -125,6 +125,9 @@ class FakeCalendarClient(CalendarClient):
     def get_tasks(self, start_time: datetime, end_time: datetime) -> Iterator[Task]:
         if False:
             yield FakeTask()
+
+    def list_events(self, start_time: datetime, end_time: datetime) -> Iterator[Event]:
+        return self.get_events(start_time, end_time)
 
     def mark_task_completed(self, task_id: str) -> None:
         raise NotImplementedError
@@ -316,3 +319,36 @@ def test_get_calendar_tomorrow_unconfigured() -> None:
     assert response.status_code == 503
     assert "Google OAuth credentials file not found" in response.json()["detail"]
 
+def test_get_calendar_events_success(mock_discord_client: MagicMock) -> None:
+    """GET /calendar/events should return events message."""
+    app.dependency_overrides[get_calendar_client] = lambda: FakeCalendarClient()
+    response = client.get("/calendar/events?start_time=2026-04-17T00:00:00Z&end_time=2026-04-18T00:00:00Z")
+    app.dependency_overrides.pop(get_calendar_client, None)
+    assert response.status_code == 200
+    assert "message" in response.json()
+
+
+def test_ai_chat_success(mock_discord_client: MagicMock) -> None:
+    """POST /ai/chat should return AI response."""
+    with patch("discord_service.main.OpenAIAIClient") as mock_ai:
+        mock_ai.return_value.run.return_value = "Here are your channels!"
+        response = client.post("/ai/chat", json={"user_input": "show channels"})
+    assert response.status_code == 200
+    assert response.json()["response"] == "Here are your channels!"
+
+
+def test_ai_chat_tool_loop_exhausted(mock_discord_client: MagicMock) -> None:
+    """POST /ai/chat should return 503 when tool loop exhausted."""
+    from ai_client_api import ToolLoopExhaustedError
+    with patch("discord_service.main.OpenAIAIClient") as mock_ai:
+        mock_ai.return_value.run.side_effect = ToolLoopExhaustedError("exhausted")
+        response = client.post("/ai/chat", json={"user_input": "show channels"})
+    assert response.status_code == 503
+
+
+def test_ai_chat_error(mock_discord_client: MagicMock) -> None:
+    """POST /ai/chat should return 500 on unexpected error."""
+    with patch("discord_service.main.OpenAIAIClient") as mock_ai:
+        mock_ai.return_value.run.side_effect = RuntimeError("unexpected")
+        response = client.post("/ai/chat", json={"user_input": "show channels"})
+    assert response.status_code == 500

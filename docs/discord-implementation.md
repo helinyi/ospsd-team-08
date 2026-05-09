@@ -1,32 +1,27 @@
 # Discord Implementation
 
-This document describes the Discord-based implementation of the `chat_client_api` interface.
+This document describes the Discord-based implementation of the shared chat vertical API.
 
 ## Component Overview
 
-- **Interface:** `components/chat_client_api`
-  - Defines the `ChatClient` contract and the `Channel` / `Message` models.
+- **Interface:** shared `chat-client-api` (external git dependency)
+  - Defines the `ChatClient` contract and `Channel` / `Message` models.
   - Provides `register_client(...)` and `get_client()` for dependency injection.
+  - Shared across Teams 4 (Telegram), 8 (Discord), and 9 (Slack).
 
 - **Implementation:** `components/discord_client_impl`
-  - Implements the `ChatClient` interface using real Discord API calls.
+  - Implements all 6 `ChatClient` methods using real Discord API calls.
   - Handles both bot token authentication and OAuth 2.0 Authorization Code Flow.
-  - Registers itself via a factory hook so that consumers only depend on `chat_client_api`.
+  - Registers itself via a factory hook so consumers only depend on `chat_client_api`.
 
 - **Service:** `components/discord_service`
   - Exposes `discord_client_impl` over HTTP as a FastAPI microservice.
   - Implements OAuth 2.0 endpoints for user authentication.
+  - Includes Google Calendar cross-vertical endpoints.
   - Deployed to Google Cloud Run at `https://discord-service-122083288286.us-east4.run.app`
 
 ## Dependency Injection
 
-The implementation uses a factory-based dependency injection pattern:
-
-1. Importing `discord_client_impl` registers a `ChatClient` factory.
-2. Calling `chat_client_api.get_client()` returns a concrete Discord client instance.
-3. If no implementation is imported, `get_client()` raises an error.
-
-Example:
 ```python
 import discord_client_impl
 from chat_client_api import get_client
@@ -36,29 +31,27 @@ client = get_client()
 
 ## Mapping Interface Methods to Discord
 
-The Discord client provides concrete behavior for all `ChatClient` methods:
-
-- `get_channels()` — Calls `GET /guilds/{guild_id}/channels`, returns text channels mapped to `Channel` objects with `channel_id` and `name`
-- `get_channel(channel_id)` — Calls `GET /channels/{channel_id}`, returns a single `Channel`
-- `get_messages(channel_id, limit=10, cursor=None)` — Calls `GET /channels/{channel_id}/messages`, returns messages oldest first. Cursor maps to Discord's `before` parameter
-- `get_message(message_id)` — Fetches a single message. `message_id` is encoded as `"channel_id:discord_message_id"`
-- `send_message(channel_id, text)` — Calls `POST /channels/{channel_id}/messages`
-- `delete_message(message_id)` — Calls `DELETE /channels/{channel_id}/messages/{id}`
+| Method | Discord API Call | Notes |
+|---|---|---|
+| `get_channels()` | `GET /guilds/{guild_id}/channels` | Returns text channels only |
+| `get_channel(channel_id)` | `GET /channels/{channel_id}` | Single channel lookup |
+| `get_messages(channel_id, limit, cursor)` | `GET /channels/{channel_id}/messages` | Oldest first, cursor maps to `before` |
+| `get_message(message_id)` | Fetches via `get_messages` | `message_id` encoded as `"channel_id:discord_message_id"` |
+| `send_message(channel_id, text)` | `POST /channels/{channel_id}/messages` | Returns created message |
+| `delete_message(message_id)` | `DELETE /channels/{channel_id}/messages/{id}` | Splits opaque ID to get both IDs |
 
 ## Authentication
 
 ### Bot Token Authentication
-Used for all guild and channel operations. The `DiscordAuthenticator` class reads `DISCORD_BOT_TOKEN` from environment variables and builds the required `Authorization: Bot <token>` headers.
+Reads `DISCORD_BOT_TOKEN` from environment and builds `Authorization: Bot <token>` headers.
 
 ### OAuth 2.0 Authorization Code Flow
-Used for user identity. The `DiscordOAuthHandler` class implements the full OAuth 2.0 flow:
-
-1. `get_authorization_url()` — generates the Discord login URL with required scopes
-2. User logs in and authorizes the application on Discord
-3. Discord redirects to `/auth/callback` with a temporary authorization code
-4. `exchange_code()` — exchanges the code for an access token via a server-to-server request
-5. Access token stored in server-side session for subsequent requests
-6. `get_oauth_headers()` — builds `Authorization: Bearer <token>` headers for user-level API calls
+1. `get_authorization_url()` — generates Discord login URL
+2. User logs in and authorizes on Discord
+3. Discord redirects to `/auth/callback` with authorization code
+4. `exchange_code()` — exchanges code for access token
+5. Token stored in server-side session
+6. `get_oauth_headers()` — builds `Authorization: Bearer <token>` headers
 
 ### Required Environment Variables
 
@@ -70,29 +63,17 @@ Used for user identity. The `DiscordOAuthHandler` class implements the full OAut
 | `DISCORD_CLIENT_SECRET` | OAuth2 Client Secret |
 | `DISCORD_REDIRECT_URI` | OAuth2 callback URL |
 | `SESSION_SECRET_KEY` | Secret key for signing session cookies |
+| `OPENAI_API_KEY` | OpenAI API key for AI client |
 
 ## Error Handling
 
-Provider-specific errors are handled inside `discord_client_impl`.
-
-The goal is to avoid leaking Discord-specific exceptions into the interface layer. When possible,
-errors are surfaced in a consistent way:
-
 - Network errors raise `RuntimeError` with descriptive messages
-- Non-200 API responses raise `RuntimeError` with the status code
-- The FastAPI service converts these to appropriate HTTP status codes (502, 404, 401)
+- Non-200 API responses raise `RuntimeError` with status code
+- FastAPI service converts these to HTTP status codes (502, 404, 401, 503)
 
-## Testing Notes
+## Testing
 
-- **Unit tests** mock all Discord API calls using `unittest.mock` and validate mapping logic.
-- **Integration tests** verify that importing `discord_client_impl` correctly injects the factory.
-- **E2E tests** run against real Discord infrastructure using environment variables — skipped gracefully when credentials are unavailable.
-- Coverage threshold is set to 90% and enforced in CI.
-
-## Design Goals
-
-- Keep the interface provider-agnostic.
-- Avoid leaking Discord SDK types into `chat_client_api`.
-- Make the implementation swappable via dependency injection.
-- Keep the interface "deep": small surface area with meaningful capability underneath.
-- OAuth 2.0 identifies users while bot token handles guild operations — matching Discord's API design.
+- Unit tests mock all Discord API calls
+- Integration tests verify DI factory injection
+- E2E tests run against real Discord infrastructure, skipped when credentials unavailable
+- Coverage threshold: 90%, enforced in CI
