@@ -140,6 +140,23 @@ The import covered the existing Cloud Run service, Artifact Registry repository,
 
 The Cloud Run service previously had Discord credentials configured as plain environment values. Those values have been moved into Secret Manager. Do not copy secret values into Terraform files.
 
+### Re-bootstrapping
+
+The deployment uses a service account impersonation pattern (`bootstrap_impersonation_member`) to avoid committing long-lived keys to CI. This grants a human identity the ability to impersonate the Terraform deployer service account (`circleci-terraform-deployer@ospsd8-discord.iam.gserviceaccount.com`) without storing a key file in source control.
+
+To re-bootstrap from scratch:
+1. Authenticate as a project owner: `gcloud auth login`
+2. Set the project: `gcloud config set project ospsd8-discord`
+3. Initialize Terraform with the remote backend:
+```bash
+terraform -chdir=infra/terraform init \
+  -backend-config="bucket=ospsd8-discord-terraform-state" \
+  -backend-config="prefix=team-08/discord-service"
+```
+4. Run `terraform apply` — this recreates the deployer SA, IAM bindings, and Secret Manager containers
+5. Generate a new key for CircleCI (see key rotation instructions above)
+6. Store the base64-encoded key in CircleCI as `GCLOUD_SERVICE_KEY`
+
 ### CircleCI Variables
 
 Because this repo deploys through CircleCI, use **CircleCI project environment variables** or a **CircleCI context**. GitHub Actions also has repository secrets, but those only apply if the project uses GitHub Actions workflows.

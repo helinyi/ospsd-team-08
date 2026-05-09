@@ -43,7 +43,7 @@ calendar_integration     ← Google Calendar cross-vertical integration
 ↑
 google_calendar_adapter  ← Google Calendar API adapter
 ```
-
+> Shared vertical API contract: [ospsd-chat-api](https://github.com/HarshithKoriRaj/Shared-API/blob/main/README.md)
 Both `discord_client_impl` and `discord_adapter` implement the same `ChatClient` interface — swapping between them requires no changes to consumer code.
 
 ---
