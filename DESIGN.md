@@ -88,6 +88,26 @@ calendar_integration formats events
 ↓
 Formatted message returned---
 ```
+
+## End-to-End Request Flow
+
+```
+User prompt (e.g. "What's on my calendar tomorrow?")
+↓
+OpenAIAIClient.run()          [AI loop]
+↓
+Tool calling → get_channels() [tool dispatch]
+↓
+google_calendar_adapter        [cross-vertical call]
+↓
+Google Calendar API
+↓
+Response formatted and returned
+↓
+prometheus_fastapi_instrumentator records latency + status  [telemetry]
+↓
+Grafana dashboard visualizes metrics
+```
 ## Shared Vertical API (HW3)
 
 In HW3, the local `chat_client_api` package was replaced with the shared vertical API agreed upon by Teams 4 (Telegram), 8 (Discord), and 9 (Slack). Consumed as a `uv` git dependency:
