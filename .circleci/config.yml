@@ -102,7 +102,6 @@ jobs:
             uv run pytest tests/ \
               --junitxml=test-results/integration/results.xml \
               --cov=discord_client_impl \
-              --cov=chat_client_api \
               --cov-append \
               --cov-report=xml:coverage.xml \
               --cov-report=html:htmlcov
