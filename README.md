@@ -103,6 +103,22 @@ SESSION_SECRET_KEY=any-random-string
 OPENAI_API_KEY=your_openai_api_key
 ```
 
+### Google Calendar credentials (optional)
+
+The `/calendar/*` endpoints need OAuth credentials to talk to Google Calendar.
+On Cloud Run these are mounted from Secret Manager automatically. For local
+dev, pull them from the same Secret Manager into the repo root with:
+
+```bash
+gcloud auth login                       # one time per machine
+bash scripts/dev-setup-calendar.sh      # writes credentials.json + token.json
+```
+
+Both files are gitignored. If you skip this step, every other endpoint still
+works; only `/calendar/*` will return 503 with a "credentials file not found"
+message until you run the script. The script skips files that already exist —
+after secrets are rotated, re-run with `--force` to overwrite local copies.
+
 ---
 
 ## Development
