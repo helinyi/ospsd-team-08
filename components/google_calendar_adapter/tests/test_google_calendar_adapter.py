@@ -290,3 +290,25 @@ def test_get_credentials_returns_valid_token(
             token_path="token.json",  # noqa: S106
         )
     assert result == mock_creds
+
+def test_create_event_returns_event() -> None:
+    client = GoogleCalendarClient()
+    mock_service = _build_mock_service()
+    mock_service.events().insert().execute.return_value = {
+        "id": "evt-new",
+        "summary": "Team Sync",
+        "start": {"dateTime": "2026-05-10T15:00:00+00:00"},
+        "end": {"dateTime": "2026-05-10T16:00:00+00:00"},
+    }
+    client._service = mock_service
+
+    from datetime import UTC, datetime
+    event = client.create_event(
+        title="Team Sync",
+        start_time=datetime(2026, 5, 10, 15, 0, tzinfo=UTC),
+        end_time=datetime(2026, 5, 10, 16, 0, tzinfo=UTC),
+        description="Weekly sync",
+        location="Zoom",
+    )
+    assert event.id == "evt-new"
+    assert event.title == "Team Sync"
