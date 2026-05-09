@@ -13,7 +13,6 @@ import openai_ai_client_impl  # noqa: F401
 import requests
 import uvicorn
 from ai_client_api import ToolLoopExhaustedError
-from ai_client_api import get_client as get_ai_client
 from calendar_client_api.client import Client as CalendarClient  # noqa: TC002
 from calendar_integration.service import (
     get_events_message,
@@ -27,6 +26,7 @@ from dotenv import load_dotenv
 from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
 from google_calendar_adapter import get_calendar_client as get_connected_calendar_client
+from openai_ai_client_impl.client import OpenAIAIClient
 from prometheus_fastapi_instrumentator import Instrumentator
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -222,13 +222,21 @@ def get_calendar_events(
     return {"message": message}
 
 
+def get_optional_calendar_client() -> CalendarClient | None:  # pragma: no cover
+    """Return calendar client if configured, None otherwise."""
+    try:
+        return get_connected_calendar_client()
+    except (RuntimeError, FileNotFoundError):
+        return None
+
 @app.post("/ai/chat")
 def ai_chat(
     user_input: Annotated[str, Body(embed=True)],
+    calendar: Annotated[CalendarClient | None, Depends(get_optional_calendar_client)],
 ) -> dict[str, str]:
     """AI chat endpoint that uses the registered AI client."""
     try:
-        ai_client = get_ai_client()
+        ai_client = OpenAIAIClient(calendar_client=calendar)
         response = ai_client.run(user_input)
     except ToolLoopExhaustedError as error:
         raise HTTPException(status_code=503, detail=str(error)) from error
