@@ -54,6 +54,12 @@ def get_credentials(
             )
             creds = flow.run_local_server(port=0)
 
-        Path(resolved_token).write_text(creds.to_json())
+        try:
+            Path(resolved_token).write_text(creds.to_json())
+        except OSError:
+            # Cloud Run secret mounts are read-only; the refresh_token in the
+            # mounted token.json is unchanged, so the next request can refresh
+            # again from in-memory creds without persistence.
+            pass
 
     return creds
