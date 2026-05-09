@@ -6,12 +6,13 @@ import json
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, cast
 
-from google_calendar_adapter.client import get_connected_calendar_client
+from calendar_client_api.event import Event as CalendarEvent  # noqa: TC002
 from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:  # pragma: no cover
     from collections.abc import Callable
 
+    from calendar_client_api import Client as CalendarClient
     from chat_client_api import Channel, ChatClient, Message
 
 
@@ -38,8 +39,28 @@ class SendMessageArgs(BaseModel):
     text: str = Field(description="The message content to send.")
 
 
+class CreateCalendarEventArgs(BaseModel):
+    """Arguments for create_calendar_event tool."""
+
+    title: str = Field(description="The event title.")
+    start_time: str = Field(description="Event start time as ISO datetime string e.g. 2026-05-10T15:00:00+00:00.")
+    end_time: str = Field(description="Event end time as ISO datetime string e.g. 2026-05-10T16:00:00+00:00.")
+    description: str | None = Field(default=None, description="Optional event description.")
+    location: str | None = Field(default=None, description="Optional event location.")
+
+
+class ScheduleMeetingArgs(BaseModel):
+    """Arguments for schedule_meeting_for_message tool."""
+
+    channel_id: str = Field(description="The Discord channel ID to fetch the message from.")
+    message_id: str = Field(description="The message ID to use as meeting context.")
+    start_time: str = Field(description="Meeting start time as ISO datetime string.")
+    end_time: str = Field(description="Meeting end time as ISO datetime string.")
+    location: str | None = Field(default=None, description="Optional meeting location.")
+
+
 def build_openai_tools() -> list[dict[str, Any]]:
-    """Return OpenAI tool definitions for the shared chat API."""
+    """Return OpenAI tool definitions for the shared chat and calendar APIs."""
     return [
         {
             "type": "function",
@@ -82,34 +103,20 @@ def build_openai_tools() -> list[dict[str, Any]]:
             "type": "function",
             "function": {
                 "name": "create_calendar_event",
-                "description": "Create a Google Calendar event. Use this for cross-vertical calendar scheduling actions.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "title": {
-                            "type": "string",
-                            "description": "The event title.",
-                        },
-                        "start_time": {
-                            "type": "string",
-                            "description": "Event start time as an ISO datetime string, e.g. 2026-05-10T15:00:00+00:00.",
-                        },
-                        "end_time": {
-                            "type": "string",
-                            "description": "Event end time as an ISO datetime string, e.g. 2026-05-10T16:00:00+00:00.",
-                        },
-                        "description": {
-                            "type": ["string", "null"],
-                            "description": "Optional event description.",
-                        },
-                        "location": {
-                            "type": ["string", "null"],
-                            "description": "Optional event location.",
-                        },
-                    },
-                    "required": ["title", "start_time", "end_time"],
-                    "additionalProperties": False,
-                },
+                "description": "Create a Google Calendar event.",
+                "parameters": CreateCalendarEventArgs.model_json_schema(),
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "schedule_meeting_for_message",
+                "description": (
+                    "Fetch a Discord message and schedule a Google Calendar meeting "
+                    "using the message content as the meeting description. "
+                    "This bridges the chat and calendar verticals."
+                ),
+                "parameters": ScheduleMeetingArgs.model_json_schema(),
             },
         },
     ]
@@ -136,75 +143,60 @@ def _serialize_message(message: Message) -> dict[str, Any]:
     }
 
 
-def _get_calendar_client(calendar_client: object | None) -> object:
-    """Return the provided calendar client or create a connected one."""
-    if calendar_client is not None:
-        return calendar_client
-
-    return get_connected_calendar_client()
-
-
-def _create_calendar_event(  # noqa: PLR0913
-    calendar_client: object | None,
+def _make_event(
     title: str,
-    start_time: str,
-    end_time: str,
-    description: str | None = None,
-    location: str | None = None,
-) -> str:
-    """Create a Google Calendar event and return a serialized result."""
-    client = cast("Any", _get_calendar_client(calendar_client))
+    start_dt: datetime,
+    end_dt: datetime,
+    description: str | None,
+    location: str | None,
+) -> CalendarEvent:
+    """Build a minimal CalendarEvent for creation."""
+    from calendar_client_api.event import Event  # noqa: PLC0415
 
-    start_dt = datetime.fromisoformat(start_time)
-    end_dt = datetime.fromisoformat(end_time)
+    class _SimpleEvent(Event):
+        @property
+        def id(self) -> str:
+            return ""
+        @property
+        def title(self) -> str:
+            return title
+        @property
+        def start_time(self) -> datetime:
+            return start_dt
+        @property
+        def end_time(self) -> datetime:
+            return end_dt
+        @property
+        def location(self) -> str | None:
+            return location
+        @property
+        def description(self) -> str | None:
+            return description
 
-    body: dict[str, object] = {
-        "summary": title,
-        "start": {
-            "dateTime": start_dt.isoformat(),
-            "timeZone": "UTC",
-        },
-        "end": {
-            "dateTime": end_dt.isoformat(),
-            "timeZone": "UTC",
-        },
-    }
+    return _SimpleEvent()
 
-    if description:
-        body["description"] = description
 
-    if location:
-        body["location"] = location
-
-    service = client._require_calendar_service()  # noqa: SLF001
-    calendar_id = getattr(client, "calendar_id", "primary")
-
-    response = service.events().insert(
-        calendarId=calendar_id,
-        body=body,
-    ).execute()
-
-    return json.dumps(
-        {
-            "event_id": response.get("id"),
-            "title": response.get("summary"),
-            "start_time": response.get("start", {}).get("dateTime"),
-            "end_time": response.get("end", {}).get("dateTime"),
-            "location": response.get("location"),
-            "description": response.get("description"),
-        }
-    )
+def _serialize_created_event(created: CalendarEvent) -> str:
+    """Serialize a created calendar event to JSON."""
+    return json.dumps({
+        "event_id": created.id,
+        "title": created.title,
+        "start_time": created.start_time.isoformat(),
+        "end_time": created.end_time.isoformat(),
+        "location": created.location,
+        "description": created.description,
+    })
 
 
 def get_tool_handlers(
     chat_client: ChatClient,
-    calendar_client: object | None = None,
+    calendar_client: CalendarClient | None = None,
 ) -> dict[str, Callable[..., str]]:
     """Bind tool handlers to the provided chat and calendar clients."""
 
     def handle_get_channels() -> str:
         channels = chat_client.get_channels()
-        return json.dumps([_serialize_channel(channel) for channel in channels])
+        return json.dumps([_serialize_channel(c) for c in channels])
 
     def handle_get_channel(channel_id: str) -> str:
         channel = chat_client.get_channel(channel_id)
@@ -215,12 +207,8 @@ def get_tool_handlers(
         limit: int = 10,
         cursor: str | None = None,
     ) -> str:
-        messages = chat_client.get_messages(
-            channel_id=channel_id,
-            limit=limit,
-            cursor=cursor,
-        )
-        return json.dumps([_serialize_message(message) for message in messages])
+        messages = chat_client.get_messages(channel_id=channel_id, limit=limit, cursor=cursor)
+        return json.dumps([_serialize_message(m) for m in messages])
 
     def handle_send_message(channel_id: str, text: str) -> str:
         message = chat_client.send_message(channel_id=channel_id, text=text)
@@ -233,14 +221,34 @@ def get_tool_handlers(
         description: str | None = None,
         location: str | None = None,
     ) -> str:
-        return _create_calendar_event(
-            calendar_client=calendar_client,
-            title=title,
-            start_time=start_time,
-            end_time=end_time,
-            description=description,
-            location=location,
+        if calendar_client is None:
+            return json.dumps({"error": "No calendar client configured."})
+        start_dt = datetime.fromisoformat(start_time)
+        end_dt = datetime.fromisoformat(end_time)
+        event = _make_event(title, start_dt, end_dt, description, location)
+        created = cast("Any", calendar_client).create_event(event)
+        return _serialize_created_event(created)
+
+    def handle_schedule_meeting_for_message(
+        channel_id: str,
+        message_id: str,
+        start_time: str,
+        end_time: str,
+        location: str | None = None,
+    ) -> str:
+        if calendar_client is None:
+            return json.dumps({"error": "No calendar client configured."})
+        message = chat_client.get_message(message_id)
+        start_dt = datetime.fromisoformat(start_time)
+        end_dt = datetime.fromisoformat(end_time)
+        title = f"Meeting: {message.text[:50]}"
+        description = (
+            f"Scheduled from Discord message by {message.sender} "
+            f"in channel {channel_id}: {message.text}"
         )
+        event = _make_event(title, start_dt, end_dt, description, location)
+        created = cast("Any", calendar_client).create_event(event)
+        return _serialize_created_event(created)
 
     return {
         "get_channels": handle_get_channels,
@@ -248,4 +256,5 @@ def get_tool_handlers(
         "get_messages": handle_get_messages,
         "send_message": handle_send_message,
         "create_calendar_event": handle_create_calendar_event,
+        "schedule_meeting_for_message": handle_schedule_meeting_for_message,
     }

@@ -16,6 +16,7 @@
 | GET | `/calendar/tomorrow` | Returns tomorrow's Google Calendar events |
 | GET | `/calendar/events` | Returns events for a given time range |
 | GET | `/metrics` | Prometheus telemetry metrics |
+| POST | `/ai/chat` | AI-powered chat with tool calling |
 
 ## Dependency Injection
 
@@ -31,5 +32,5 @@
 | 400 | OAuth exchange failure |
 | 401 | Not authenticated |
 | 502 | Discord or external API error |
-| 503 | Calendar credentials not configured |
+| 503 | Calendar credentials not configured or AI tool loop exhausted|
 | 422 | Missing or invalid request parameters |

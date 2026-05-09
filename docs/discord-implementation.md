@@ -64,6 +64,9 @@ Reads `DISCORD_BOT_TOKEN` from environment and builds `Authorization: Bot <token
 | `DISCORD_REDIRECT_URI` | OAuth2 callback URL |
 | `SESSION_SECRET_KEY` | Secret key for signing session cookies |
 | `OPENAI_API_KEY` | OpenAI API key for AI client |
+| `GOOGLE_OAUTH_CREDENTIALS_PATH` | Path to Google OAuth credentials file |
+| `GOOGLE_OAUTH_TOKEN_PATH` | Path to Google OAuth token file |
+| `GOOGLE_CALENDAR_ID` | Google Calendar ID (default: primary) |
 
 ## Error Handling
 
