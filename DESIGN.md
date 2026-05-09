@@ -96,6 +96,8 @@ In HW3, the local `chat_client_api` package was replaced with the shared vertica
 chat-client-api = { git = "https://github.com/HarshithKoriRaj/Shared-API.git" }
 ```
 
+Vertical contract (memo): [ospsd-chat-api — Teams 4, 8, 9](https://github.com/HarshithKoriRaj/Shared-API/blob/main/README.md)
+
 The shared interface defines 6 methods:
 - `get_channels() -> list[Channel]`
 - `get_channel(channel_id: str) -> Channel`
