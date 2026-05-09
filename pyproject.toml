@@ -32,8 +32,8 @@ members = ["components/*"]
 [tool.uv.sources]
 fast-api-client = { workspace = true }
 chat-client-adapter = { workspace = true }
-calendar-client-api = { git = "https://github.com/samuelj25/ospsd-team-05", subdirectory = "components/calendar_client_api" }
-chat-client-api = { git = "https://github.com/HarshithKoriRaj/Shared-API.git" }
+calendar-client-api = { git = "https://github.com/samuelj25/ospsd-team-05", subdirectory = "components/calendar_client_api", rev = "331167b7020bc0bdc58afd8f1b07fdc5add1310b" }
+chat-client-api = { git = "https://github.com/HarshithKoriRaj/Shared-API.git", rev = "ebb37e189065760f2090f1488d376485b7b56b20" }
 
 # ruff configuration borrowed from https://github.com/nyu/oss-taapp-example/blob/root/pyproject.toml
 [tool.ruff]
@@ -85,6 +85,30 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "fast_api_client.*"
 ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "calendar_client_api.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "ospsd_calendar_api.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "google_calendar_adapter.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "calendar_integration.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "test_service"
+ignore_errors = true  # Team 5 calendar API has conflicting method signatures between calendar_client_api and ospsd_calendar_api
+
+[[tool.mypy.overrides]]
+module = "test_discord_service"
+ignore_errors = true  # Same as above
 
 [tool.pytest.ini_options]
 minversion = "8.0"

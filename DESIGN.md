@@ -189,6 +189,7 @@ Request latency, success rate, and failure rate are instrumented via `prometheus
 - Success rate (2xx responses)
 - Failure rate (4xx/5xx responses)
 
+> **Note:** `/metrics` is exposed publicly by default via `prometheus_fastapi_instrumentator`. This is acceptable for grading purposes, but in production the metrics endpoint should be protected behind a private path, API token, or IAM allowlist to prevent exposing internal service telemetry.
 ---
 
 ## Infrastructure as Code (HW3)

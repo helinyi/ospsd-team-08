@@ -88,7 +88,10 @@ wheels = [
 [[package]]
 name = "calendar-client-api"
 version = "0.1.0"
-source = { git = "https://github.com/samuelj25/ospsd-team-05?subdirectory=components%2Fcalendar_client_api#71d7a0c7656904afaf3c896848b11b0d7db21e90" }
+source = { git = "https://github.com/samuelj25/ospsd-team-05?subdirectory=components%2Fcalendar_client_api&rev=331167b7020bc0bdc58afd8f1b07fdc5add1310b#331167b7020bc0bdc58afd8f1b07fdc5add1310b" }
+dependencies = [
+    { name = "ospsd-calendar-api" },
+]
 
 [[package]]
 name = "calendar-integration"
@@ -99,7 +102,7 @@ dependencies = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "calendar-client-api", git = "https://github.com/samuelj25/ospsd-team-05?subdirectory=components%2Fcalendar_client_api" }]
+requires-dist = [{ name = "calendar-client-api", git = "https://github.com/samuelj25/ospsd-team-05?subdirectory=components%2Fcalendar_client_api&rev=331167b7020bc0bdc58afd8f1b07fdc5add1310b" }]
 
 [[package]]
 name = "certifi"
@@ -230,7 +233,7 @@ requires-dist = [
 [[package]]
 name = "chat-client-api"
 version = "0.1.0"
-source = { git = "https://github.com/HarshithKoriRaj/Shared-API.git#ebb37e189065760f2090f1488d376485b7b56b20" }
+source = { git = "https://github.com/HarshithKoriRaj/Shared-API.git?rev=ebb37e189065760f2090f1488d376485b7b56b20#ebb37e189065760f2090f1488d376485b7b56b20" }
 
 [[package]]
 name = "click"
@@ -578,7 +581,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "calendar-client-api", git = "https://github.com/samuelj25/ospsd-team-05?subdirectory=components%2Fcalendar_client_api" },
+    { name = "calendar-client-api", git = "https://github.com/samuelj25/ospsd-team-05?subdirectory=components%2Fcalendar_client_api&rev=331167b7020bc0bdc58afd8f1b07fdc5add1310b" },
     { name = "google-api-python-client", specifier = ">=2.177.0" },
     { name = "google-auth", specifier = ">=2.40.3" },
     { name = "google-auth-oauthlib", specifier = ">=1.2.2" },
@@ -1010,9 +1013,14 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "ai-client-api", editable = "components/ai_client_api" },
-    { name = "chat-client-api", git = "https://github.com/HarshithKoriRaj/Shared-API.git" },
+    { name = "chat-client-api", git = "https://github.com/HarshithKoriRaj/Shared-API.git?rev=ebb37e189065760f2090f1488d376485b7b56b20" },
     { name = "openai", specifier = ">=1.0.0" },
 ]
+
+[[package]]
+name = "ospsd-calendar-api"
+version = "0.1.0"
+source = { git = "https://github.com/DeMoliT1on/ospsd-calendar-api#e8c7b2a8a78e1fc0aeb6cb7acf8d5e5f050d09b5" }
 
 [[package]]
 name = "ospsd-team-08"
@@ -1053,8 +1061,8 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "calendar-client-api", git = "https://github.com/samuelj25/ospsd-team-05?subdirectory=components%2Fcalendar_client_api" },
-    { name = "chat-client-api", git = "https://github.com/HarshithKoriRaj/Shared-API.git" },
+    { name = "calendar-client-api", git = "https://github.com/samuelj25/ospsd-team-05?subdirectory=components%2Fcalendar_client_api&rev=331167b7020bc0bdc58afd8f1b07fdc5add1310b" },
+    { name = "chat-client-api", git = "https://github.com/HarshithKoriRaj/Shared-API.git?rev=ebb37e189065760f2090f1488d376485b7b56b20" },
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "fastapi", specifier = ">=0.135.1" },
     { name = "httpx", specifier = ">=0.28.1" },
