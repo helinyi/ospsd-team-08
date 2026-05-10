@@ -214,3 +214,89 @@ resource "google_cloud_run_v2_service_iam_member" "public_invoker" {
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
+
+resource "google_secret_manager_secret_iam_member" "prometheus_secret_accessor" {
+  for_each = local.prometheus_mounted_secrets
+
+  project   = var.project_id
+  secret_id = each.value.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.runtime.email}"
+}
+
+resource "google_cloud_run_v2_service" "prometheus" {
+  name     = "prometheus"
+  location = var.region
+  project  = var.project_id
+  ingress  = "INGRESS_TRAFFIC_ALL"
+
+  template {
+    service_account = google_service_account.runtime.email
+
+    containers {
+      name  = "prometheus-1"
+      image = "prom/prometheus:latest"
+
+      args = [
+        "--config.file=/etc/prometheus/prometheus.yml",
+        "--storage.tsdb.retention.time=1h",
+      ]
+
+      ports {
+        name           = "http1"
+        container_port = 9090
+      }
+
+      resources {
+        limits = {
+          cpu    = "1"
+          memory = "512Mi"
+        }
+      }
+
+      dynamic "volume_mounts" {
+        for_each = local.prometheus_mounted_secrets
+
+        content {
+          name       = volume_mounts.key
+          mount_path = volume_mounts.value.mount_path
+        }
+      }
+    }
+
+    dynamic "volumes" {
+      for_each = local.prometheus_mounted_secrets
+
+      content {
+        name = volumes.key
+
+        secret {
+          secret = volumes.value.secret_id
+
+          items {
+            path    = volumes.value.file_name
+            version = "latest"
+          }
+        }
+      }
+    }
+  }
+
+  traffic {
+    type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
+    percent = 100
+  }
+
+  depends_on = [
+    google_project_service.required["run.googleapis.com"],
+    google_secret_manager_secret_iam_member.prometheus_secret_accessor,
+  ]
+}
+
+resource "google_cloud_run_v2_service_iam_member" "prometheus_public_invoker" {
+  project  = var.project_id
+  location = var.region
+  name     = google_cloud_run_v2_service.prometheus.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}

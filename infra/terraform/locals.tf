@@ -27,6 +27,21 @@ locals {
     }
   }
 
+  # Secrets mounted into the Prometheus container as files.
+  # Created out-of-band via gcloud; Terraform only owns the Cloud Run mount.
+  prometheus_mounted_secrets = {
+    grafana_token = {
+      secret_id  = "grafana-token"
+      mount_path = "/run/secrets"
+      file_name  = "grafana_token"
+    }
+    prometheus_config = {
+      secret_id  = "prometheus-config"
+      mount_path = "/etc/prometheus"
+      file_name  = "prometheus.yml"
+    }
+  }
+
   common_labels = {
     app        = var.service_name
     component  = "discord-service"
