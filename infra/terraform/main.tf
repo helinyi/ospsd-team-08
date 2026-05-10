@@ -230,6 +230,10 @@ resource "google_cloud_run_v2_service" "prometheus" {
   project  = var.project_id
   ingress  = "INGRESS_TRAFFIC_ALL"
 
+  scaling {
+      min_instance_count = 1
+  }
+  
   template {
     service_account = google_service_account.runtime.email
 
