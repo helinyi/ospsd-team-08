@@ -1,7 +1,6 @@
 # CS-GY-9223 Open Source — Team 8
 
-A modular chat client architecture built on Discord, demonstrating clean component separation, dependency injection, OAuth 2.0, and microservice deployment.
-
+A modular chat client architecture built on Discord, demonstrating clean component separation, dependency injection, OAuth 2.0, microservice deployment, AI tool calling, and cross-vertical calendar integration.
 ---
 
 ## Team
@@ -35,8 +34,16 @@ discord_service          ← FastAPI microservice (deployed to Google Cloud Run)
 discord_service_api_client  ← Auto-generated type-safe HTTP client
         ↑
 discord_adapter          ← Adapter implementing ChatClient via the service
-```
 
+ai_client_api            ← Abstract AI client interface
+↑
+openai_ai_client_impl    ← OpenAI implementation with tool calling
+
+calendar_integration     ← Google Calendar cross-vertical integration
+↑
+google_calendar_adapter  ← Google Calendar API adapter
+```
+> Shared vertical API contract: [ospsd-chat-api](https://github.com/HarshithKoriRaj/Shared-API/blob/main/README.md)
 Both `discord_client_impl` and `discord_adapter` implement the same `ChatClient` interface — swapping between them requires no changes to consumer code.
 
 ---
@@ -53,6 +60,10 @@ API docs:
 https://discord-service-122083288286.us-east4.run.app/docs
 ```
 
+Health check:
+```
+https://discord-service-122083288286.us-east4.run.app/health
+```
 ---
 
 ## Prerequisites
@@ -89,14 +100,34 @@ DISCORD_CLIENT_ID=your_client_id
 DISCORD_CLIENT_SECRET=your_client_secret
 DISCORD_REDIRECT_URI=http://localhost:8000/auth/callback
 SESSION_SECRET_KEY=any-random-string
+OPENAI_API_KEY=your_openai_api_key
+GOOGLE_OAUTH_CREDENTIALS_PATH=credentials.json
+GOOGLE_OAUTH_TOKEN_PATH=token.json
+GOOGLE_CALENDAR_ID=primary
 ```
+
+### Google Calendar credentials (optional)
+
+The `/calendar/*` endpoints need OAuth credentials to talk to Google Calendar.
+On Cloud Run these are mounted from Secret Manager automatically. For local
+dev, pull them from the same Secret Manager into the repo root with:
+
+```bash
+gcloud auth login                       # one time per machine
+bash scripts/dev-setup-calendar.sh      # writes credentials.json + token.json
+```
+
+Both files are gitignored. If you skip this step, every other endpoint still
+works; only `/calendar/*` will return 503 with a "credentials file not found"
+message until you run the script. The script skips files that already exist —
+after secrets are rotated, re-run with `--force` to overwrite local copies.
 
 ---
 
 ## Development
 ```bash
 # Run all tests
-uv run pytest tests/ components/discord_client_impl/tests/ components/chat_client_api/tests/
+uv run pytest
 
 # Run linting
 uv run ruff check .
@@ -105,6 +136,62 @@ uv run ruff check .
 uv run mypy components/
 ```
 
+---
+## Dependency Injection Usage
+
+```python
+# Using local Discord implementation
+import discord_client_impl
+from chat_client_api import get_client
+
+client = get_client()
+channels = client.get_channels()
+
+# Using remote service via adapter
+import chat_client_adapter
+from chat_client_api import get_client
+
+client = get_client()
+channels = client.get_channels()  # same code, different implementation
+```
+
+---
+
+## AI Client Usage
+
+```python
+import discord_client_impl       # registers Discord as chat client
+import openai_ai_client_impl     # registers OpenAI as AI client
+from ai_client_api import get_client
+
+ai = get_client()
+response = ai.run("What channels are available?")
+print(response)
+```
+
+---
+## Infrastructure as Code
+
+Infrastructure is managed with Terraform in `infra/terraform`.
+
+Terraform imports and manages the existing Google Cloud resources:
+
+- Cloud Run service: `discord-service`
+- Artifact Registry repository: `cloud-run-source-deploy`
+- CircleCI Terraform deployer service account and IAM
+- Secret Manager secret containers
+- Cloud Run runtime service account and IAM
+
+CircleCI runs the deployment workflow. Store deployment and application secrets in CircleCI project environment variables or a CircleCI context. During deployment, CircleCI copies those values into Google Secret Manager so Cloud Run reads secrets at runtime.
+
+Useful local checks:
+
+```bash
+terraform fmt -check -recursive infra/terraform
+terraform -chdir=infra/terraform init -backend=false
+terraform -chdir=infra/terraform validate
+```
+For full bootstrap instructions see [CLOUDRUN.md](CLOUDRUN.md).
 ---
 
 ## Running the Service Locally
@@ -116,25 +203,6 @@ Then visit:
 - `http://localhost:8000/health` — health check
 - `http://localhost:8000/docs` — API documentation
 - `http://localhost:8000/auth/login` — start OAuth 2.0 flow
-
----
-
-## Dependency Injection Usage
-```python
-# Using local library
-import discord_client_impl
-from chat_client_api import get_client
-
-client = get_client()
-channels = client.get_channels()
-
-# Using remote service (via adapter)
-import discord_adapter
-from chat_client_api import get_client
-
-client = get_client()
-channels = client.get_channels()  # same code, different implementation
-```
 
 ---
 
@@ -153,21 +221,35 @@ http://127.0.0.1:8000
 ```
 .
 ├── components/
-│   ├── chat_client_api/           # Abstract chat client interface
-│   ├── discord_client_impl/       # Discord implementation + OAuth 2.0
-│   ├── discord_service/           # FastAPI microservice
+│   ├── ai_client_api/              # Abstract AI client interface
+│   ├── openai_ai_client_impl/      # OpenAI implementation with tool calling
+│   ├── calendar_integration/       # Google Calendar cross-vertical integration
+│   ├── google_calendar_adapter/    # Google Calendar API adapter
+│   ├── discord_client_impl/        # Discord implementation + OAuth 2.0
+│   ├── discord_service/            # FastAPI microservice
 │   ├── discord_service_api_client/ # Auto-generated API client
-│   └── discord_adapter/           # Service client adapter
+│   └── chat_client_adapter/        # Service client adapter
 ├── tests/
 │   ├── e2e/                       # End-to-end tests
 │   └── integration/               # Integration tests
+├── infra/
+│   └── terraform/                  # Google Cloud Run IaC
 ├── docs/                          # MkDocs documentation
+├── hw3-plan.md                     # HW3 shared API adaptation plan
+├── DESIGN.md                       # Architecture and design decisions
+├── CLOUDRUN.md                     # Cloud Run deployment guide
 ├── contributing.md
-├── design.md
 ├── mkdocs.yml
 ├── pyproject.toml
 └── README.md
 ```
+Note: `chat_client_api` is now consumed as an external git dependency from the shared vertical API repo.
+
+---
+
+## Telemetry Dashboard
+
+The Grafana dashboard of the metrics can be viewed [here](https://aw3950.grafana.net/public-dashboards/11a16d893f7e4302acfaf12feda6a33e).
 
 ---
 

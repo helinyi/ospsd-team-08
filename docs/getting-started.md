@@ -2,178 +2,115 @@
 
 ## Prerequisites
 
-- Python 3.10 or higher
+- Python 3.13 or higher
 - [uv](https://docs.astral.sh/uv/) package manager
-- (Optional) Docker (for containerized deployment)
 
 ---
 
 ## Installation
 
-1. Clone the repository:
-
 ```bash
 git clone <repository-url>
-cd opssd-team-08
-```
-
-2. Install dependencies:
-
-```bash
+cd ospsd-team-08
 uv sync --all-packages
 ```
 
 ---
 
-## Running Tests
+## Environment Variables
 
-Run all tests:
+Copy `.env.example` to `.env`:
+```
+DISCORD_BOT_TOKEN=your_bot_token
+DISCORD_GUILD_ID=your_guild_id
+DISCORD_CLIENT_ID=your_client_id
+DISCORD_CLIENT_SECRET=your_client_secret
+DISCORD_REDIRECT_URI=http://localhost:8000/auth/callback
+SESSION_SECRET_KEY=any-random-string
+OPENAI_API_KEY=your_openai_api_key
+```
+---
+### Google Calendar Setup
+
+To enable `/calendar/*` endpoints locally:
+
+```bash
+gcloud auth login  # one time per machine
+bash scripts/dev-setup-calendar.sh  # writes credentials.json + token.json
+```
+
+Both files are gitignored. Without this step, only `/calendar/*` returns 503 — all other endpoints work normally.
+
+## Running Tests
 
 ```bash
 uv run pytest
 ```
 
-This includes:
-
-- Unit tests (mocked Discord API)
-- Integration tests (API client)
-- E2E tests (real service, may skip if not configured)
-
 ---
 
-## Running the Discord Service (FastAPI)
-
-Start the service locally:
+## Running the Service Locally
 
 ```bash
 uv run uvicorn discord_service.main:app --reload
 ```
 
-The service will be available at:
-
-- API base: http://127.0.0.1:8000
-- OpenAPI spec: http://127.0.0.1:8000/openapi.json
-- Docs UI: http://127.0.0.1:8000/docs
+- `http://localhost:8000/health` — health check
+- `http://localhost:8000/docs` — API docs
+- `http://localhost:8000/auth/login` — Discord OAuth flow
+- `http://localhost:8000/auth/callback` — OAuth callback
+- `http://localhost:8000/users/me` — authenticated Discord user info
+- `http://localhost:8000/channels` — list all channels
+- `http://localhost:8000/channels/{channel_id}/messages` — get recent messages
+- `http://localhost:8000/calendar/tomorrow` — tomorrow's calendar events
+- `http://localhost:8000/calendar/events` — events for a time range
+- `http://localhost:8000/ai/chat` — AI-powered chat with tool calling
+- `http://localhost:8000/metrics` — Prometheus metrics
 
 ---
 
 ## Deployed Service
-
-The service is deployed on Google Cloud Run:
-
+```
 https://discord-service-122083288286.us-east4.run.app
-
-You can verify:
-
-```bash
-curl https://discord-service-122083288286.us-east4.run.app/health
 ```
-
-Expected response:
-
-```json
-{"status":"ok"}
-```
-
 ---
 
-## Using the Chat Client (Local Implementation)
+## Chat Client Usage
 
 ```python
 import discord_client_impl
 from chat_client_api import get_client
 
 client = get_client()
-
 channels = client.get_channels()
-messages = client.get_messages("channel_id")
-
-client.send_message("channel_id", "Hello!")
+messages = client.get_messages(channels[0].channel_id, limit=10)
+client.send_message(channels[0].channel_id, "Hello!")
 ```
 
 ---
 
-## Using the Service via API Client
-
-The `discord_service_api_client` is generated from OpenAPI and can be used to call the deployed service.
-
-Example usage:
+## AI Client Usage
 
 ```python
-from discord_service_api_client import Client
-from discord_service_api_client.api.default import get_channels_channels_get
+import discord_client_impl       # registers Discord as chat client
+import openai_ai_client_impl     # registers OpenAI as AI client
+from ai_client_api import get_client
 
-client = Client(base_url="https://discord-service-122083288286.us-east4.run.app")
-
-response = get_channels_channels_get.sync(client=client)
+ai = get_client()
+response = ai.run("What channels are available?")
 print(response)
 ```
 
 ---
 
-## Dependency Injection
-
-This project uses a simple dependency injection pattern.
-
-- `chat_client_api` defines the interface
-- `discord_client_impl` registers a concrete implementation
-
-Usage:
-
-```python
-import discord_client_impl
-from chat_client_api import get_client
-
-client = get_client()
-```
-
-If no implementation is registered, `get_client()` will raise a `RuntimeError`.
-
----
-
-## Environment Variables
-
-The following environment variables are required for Discord OAuth:
-
-- DISCORD_CLIENT_ID
-- DISCORD_CLIENT_SECRET
-- DISCORD_REDIRECT_URI
-- DISCORD_BOT_TOKEN
-- DISCORD_GUILD_ID
-
-In production:
-- Stored securely via Cloud Run (not in source control)
-
----
-
-## OpenAPI Client Generation
-
-The API client is generated from:
-
-https://discord-service-122083288286.us-east4.run.app/openapi.json
-
-Using:
-
-```bash
-openapi-python-client generate --url <openapi.json>
-```
+## Telemetry
+Live Grafana dashboard: [https://aw3950.grafana.net/public-dashboards/11a16d893f7e4302acfaf12feda6a33e](https://aw3950.grafana.net/public-dashboards/11a16d893f7e4302acfaf12feda6a33e)
 
 ---
 
 ## Building Documentation
 
-To build documentation:
-
 ```bash
 uv run mkdocs build
-```
-
-To preview locally:
-
-```bash
 uv run mkdocs serve
 ```
-
-Then open:
-
-http://127.0.0.1:8000

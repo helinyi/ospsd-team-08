@@ -9,6 +9,8 @@ dependencies = [
     "starlette",
     "chat-client-api",
     "discord-client-impl",
+    "calendar-integration",
+    "google-calendar-adapter",
 ]
 
 [build-system]
@@ -19,5 +21,7 @@ build-backend = "hatchling.build"
 packages = ["src/discord_service"]
 
 [tool.uv.sources]
-chat-client-api = { workspace = true }
+chat-client-api = { git = "https://github.com/HarshithKoriRaj/Shared-API.git" }
 discord-client-impl = { workspace = true }
+calendar-integration = { workspace = true }
+google-calendar-adapter = { workspace = true }

@@ -1,14 +1,19 @@
 ## Overview
 
-This project implements a modular chat client system with Discord integration.
+A modular chat client architecture built on Discord with AI tool calling and Google Calendar cross-vertical integration.
 
-It includes:
+## Components
 
-- `chat_client_api` — defines the chat interface  
-- `discord_client_impl` — implements the interface using Discord API  
-- `discord_service` — exposes functionality as a FastAPI service  
-- `discord_service_api_client` — generated client from OpenAPI  
+- `chat-client-api` — shared vertical interface (Teams 4, 8, 9)
+- `discord_client_impl` — Discord implementation + OAuth 2.0
+- `discord_service` — FastAPI microservice on Google Cloud Run
+- `openai_ai_client_impl` — AI client with tool calling
+- `calendar_integration` — Google Calendar cross-vertical integration
 
+## Live Service
+```
+https://discord-service-122083288286.us-east4.run.app
+```
 ---
 
 ## Quick Links
@@ -18,4 +23,6 @@ It includes:
 - [Discord Implementation](discord-implementation.md)
 - [Discord Service](discord-service.md)
 - [Service API Client](discord-service-api-client.md)
-- [Design Document](design-docoment-hw2.md)
+- [Design Document](DESIGN.md)
+- [HW3 Plan](hw3-plan.md)
+- [Cloud Run Deployment](CLOUDRUN.md)

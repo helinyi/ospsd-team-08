@@ -1,12 +1,14 @@
 # Discord Service API Client
 
-`discord_service_api_client` is the component reserved for OpenAPI-generated client code from `discord_service`.
+`discord_service_api_client` is the auto-generated OpenAPI client for `discord_service`.
 
 ## Generation Workflow
 
-1. Start the FastAPI service (locally or via deployed service).
-2. Generate client code from `/openapi.json`.
-3. Use the stable wrapper module (`discord_service_api_client.client`) as the adapter-facing surface.
+1. Start the FastAPI service locally or use the deployed service.
+2. Generate client from `/openapi.json`:
+```bash
+openapi-python-client generate --url https://discord-service-122083288286.us-east4.run.app/openapi.json
+```
 
 ## Current Endpoints
 
@@ -14,13 +16,20 @@
 - `GET /auth/login`
 - `GET /auth/callback`
 - `GET /channels`
-- `POST /channels/{channel_id}/messages`
 - `GET /channels/{channel_id}/messages`
+- `POST /channels/{channel_id}/messages`
+- `GET /calendar/tomorrow`
+- `GET /calendar/events`
+- `POST /ai/chat`
+- `GET /metrics`
 
-## Scaffold Status
+## Usage
 
-- Wrapper client exists with typed method signatures.
-- Endpoint wrappers are generated under `api/default/`.
-- Request and response models are generated under `models/`.
-- Runtime usage depends on configured base URL of deployed service.
-- Intended to be used by the adapter layer for remote service calls.
+```python
+from fast_api_client import Client
+from fast_api_client.api.default import get_channels_channels_get
+
+client = Client(base_url="https://discord-service-122083288286.us-east4.run.app")
+response = get_channels_channels_get.sync(client=client)
+print(response)
+```

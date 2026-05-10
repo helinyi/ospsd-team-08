@@ -1,0 +1,352 @@
+[33mcommit ba2b10b1ac6d049399814755e201b4185f475f1c[m
+Author: Linyi He <hexiaohexiao@me.com>
+Date:   Sat May 9 02:29:04 2026 -0400
+
+    fix calendar 500 + add oauth mounts to terraform
+    
+    calendar_client_api dep was bumped to the new ospsd_calendar_api
+    abstract base where get_events is now list_events and create_event
+    update_event have new signatures. impl.py never got updated so the
+    class was abstract and couldnt be instantiated, every /calendar
+    request was crashing with TypeError.
+    
+    also added google oauth secret mounts and env path vars to the
+    cloud run service in terraform so the config doesnt get wiped on
+    the next terraform apply. the secret resources themselves are
+    still managed via gcloud, terraform only owns the cloud run mount.
+
+[1mdiff --git a/components/google_calendar_adapter/src/google_calendar_adapter/impl.py b/components/google_calendar_adapter/src/google_calendar_adapter/impl.py[m
+[1mindex fb2c46b..77b615a 100644[m
+[1m--- a/components/google_calendar_adapter/src/google_calendar_adapter/impl.py[m
+[1m+++ b/components/google_calendar_adapter/src/google_calendar_adapter/impl.py[m
+[36m@@ -9,7 +9,7 @@[m [mimport calendar_client_api[m
+ from googleapiclient.discovery import build[m
+ [m
+ from google_calendar_adapter.auth import get_credentials[m
+[31m-from google_calendar_adapter.event_impl import GoogleCalendarEvent[m
+[32m+[m[32mfrom google_calendar_adapter.event_impl import event_from_google[m
+ [m
+ if TYPE_CHECKING:[m
+     from collections.abc import Iterator[m
+[36m@@ -18,6 +18,7 @@[m [mif TYPE_CHECKING:[m
+ [m
+ _NOT_CONNECTED_MSG = "Client is not connected. Call connect() first."[m
+ [m
+[32m+[m
+ class GoogleCalendarClient(calendar_client_api.Client):[m
+     """Google Calendar-backed implementation of the shared calendar API."""[m
+ [m
+[36m@@ -46,12 +47,40 @@[m [mclass GoogleCalendarClient(calendar_client_api.Client):[m
+         self._service = build("calendar", "v3", credentials=creds)[m
+         self._tasks_service = build("tasks", "v1", credentials=creds)[m
+ [m
+[31m-    def _require_calendar_service(self) -> Any: # noqa: ANN401[m
+[32m+[m[32m    def _require_calendar_service(self) -> Any:  # noqa: ANN401[m
+         """Return the connected calendar service or raise if not connected."""[m
+         if not self._service:[m
+             raise RuntimeError(_NOT_CONNECTED_MSG)[m
+         return self._service[m
+ [m
+[32m+[m[32m    def list_events([m
+[32m+[m[32m            self,[m
+[32m+[m[32m            start: datetime,[m
+[32m+[m[32m            end: datetime,[m
+[32m+[m[32m    ) -> list[calendar_client_api.Event]:[m
+[32m+[m[32m        """Return events within [start, end)."""[m
+[32m+[m[32m        svc = self._require_calendar_service()[m
+[32m+[m[32m        events: list[calendar_client_api.Event] = [][m
+[32m+[m[32m        page_token: str | None = None[m
+[32m+[m
+[32m+[m[32m        while True:[m
+[32m+[m[32m            response = svc.events().list([m
+[32m+[m[32m                calendarId=self.calendar_id,[m
+[32m+[m[32m                timeMin=start.isoformat(),[m
+[32m+[m[32m                timeMax=end.isoformat(),[m
+[32m+[m[32m                singleEvents=True,[m
+[32m+[m[32m                orderBy="startTime",[m
+[32m+[m[32m                pageToken=page_token,[m
+[32m+[m[32m            ).execute()[m
+[32m+[m
+[32m+[m[32m            events.extend(event_from_google(raw) for raw in response.get("items", []))[m
+[32m+[m
+[32m+[m[32m            page_token = response.get("nextPageToken")[m
+[32m+[m[32m            if not page_token:[m
+[32m+[m[32m                break[m
+[32m+[m
+[32m+[m[32m        return events[m
+[32m+[m
+     def get_event(self, event_id: str) -> calendar_client_api.Event:[m
+         """Fetch a single event by its ID."""[m
+         svc = self._require_calendar_service()[m
+[36m@@ -59,66 +88,62 @@[m [mclass GoogleCalendarClient(calendar_client_api.Client):[m
+             calendarId=self.calendar_id,[m
+             eventId=event_id,[m
+         ).execute()[m
+[31m-        return GoogleCalendarEvent(response)[m
+[32m+[m[32m        return event_from_google(response)[m
+ [m
+     def create_event([m
+             self,[m
+[31m-            event: calendar_client_api.Event,[m
+[32m+[m[32m            title: str,[m
+[32m+[m[32m            start_time: datetime,[m
+[32m+[m[32m            end_time: datetime,[m
+[32m+[m[32m            description: str = "",[m
+[32m+[m[32m            location: str | None = None,[m
+     ) -> calendar_client_api.Event:[m
+         """Create a new calendar event."""[m
+         raise NotImplementedError[m
+ [m
+[31m-    def update_event([m
+[32m+[m[32m    def update_event(  # noqa: PLR0913[m
+             self,[m
+[31m-            event: calendar_client_api.Event,[m
+[32m+[m[32m            event_id: str,[m
+[32m+[m[32m            *,[m
+[32m+[m[32m            title: str | None = None,[m
+[32m+[m[32m            start_time: datetime | None = None,[m
+[32m+[m[32m            end_time: datetime | None = None,[m
+[32m+[m[32m            description: str | None = None,[m
+[32m+[m[32m            location: str | None = None,[m
+     ) -> calendar_client_api.Event:[m
+[31m-        """Update an existing calendar event."""[m
+[32m+[m[32m        """Update fields on an existing event."""[m
+         raise NotImplementedError[m
+ [m
+     def delete_event(self, event_id: str) -> None:[m
+         """Delete a calendar event by its ID."""[m
+         raise NotImplementedError[m
+ [m
+[31m-    def get_events([m
+[31m-            self,[m
+[31m-            start_time: datetime,[m
+[31m-            end_time: datetime,[m
+[31m-    ) -> Iterator[calendar_client_api.Event]:[m
+[31m-        """Yield events within the given time range."""[m
+[31m-        svc = self._require_calendar_service()[m
+[31m-        page_token = None[m
+[31m-[m
+[31m-        while True:[m
+[31m-            events_result = svc.events().list([m
+[31m-                calendarId=self.calendar_id,[m
+[31m-                timeMin=start_time.isoformat(),[m
+[31m-                timeMax=end_time.isoformat(),[m
+[31m-                singleEvents=True,[m
+[31m-                orderBy="startTime",[m
+[31m-                pageToken=page_token,[m
+[31m-            ).execute()[m
+[31m-[m
+[31m-            for event in events_result.get("items", []):[m
+[31m-                yield GoogleCalendarEvent(event)[m
+[31m-[m
+[31m-            page_token = events_result.get("nextPageToken")[m
+[31m-            if not page_token:[m
+[31m-                break[m
+[31m-[m
+     def from_raw_data(self, raw_data: str) -> calendar_client_api.Event:[m
+         """Build an event object from raw JSON data."""[m
+[31m-        data = json.loads(raw_data)[m
+[31m-        return GoogleCalendarEvent(data)[m
+[32m+[m[32m        return event_from_google(json.loads(raw_data))[m
+ [m
+     def get_task(self, task_id: str) -> calendar_client_api.Task:[m
+         """Fetch a single task by its ID."""[m
+         raise NotImplementedError[m
+ [m
+[31m-    def create_task(self, task: calendar_client_api.Task) -> calendar_client_api.Task:[m
+[32m+[m[32m    def create_task([m
+[32m+[m[32m            self,[m
+[32m+[m[32m            title: str,[m
+[32m+[m[32m            due: datetime | None = None,[m
+[32m+[m[32m            description: str | None = None,[m
+[32m+[m[32m    ) -> calendar_client_api.Task:[m
+         """Create a new task."""[m
+         raise NotImplementedError[m
+ [m
+[31m-    def update_task(self, task: calendar_client_api.Task) -> calendar_client_api.Task:[m
+[32m+[m[32m    def update_task([m
+[32m+[m[32m            self,[m
+[32m+[m[32m            task_id: str,[m
+[32m+[m[32m            *,[m
+[32m+[m[32m            title: str | None = None,[m
+[32m+[m[32m            due: datetime | None = None,[m
+[32m+[m[32m            description: str | None = None,[m
+[32m+[m[32m            is_completed: bool | None = None,[m
+[32m+[m[32m    ) -> calendar_client_api.Task:[m
+         """Update an existing task."""[m
+         raise NotImplementedError[m
+ [m
+
+[33mcommit ad174cff572933d4de5a51926e13737a556cb461[m
+Author: zzqjames <90412404+zzqjames@users.noreply.github.com>
+Date:   Fri Apr 17 23:33:41 2026 -0400
+
+    fix mypy problem
+
+[1mdiff --git a/components/google_calendar_adapter/src/google_calendar_adapter/impl.py b/components/google_calendar_adapter/src/google_calendar_adapter/impl.py[m
+[1mindex d98beee..fb2c46b 100644[m
+[1m--- a/components/google_calendar_adapter/src/google_calendar_adapter/impl.py[m
+[1m+++ b/components/google_calendar_adapter/src/google_calendar_adapter/impl.py[m
+[36m@@ -6,7 +6,7 @@[m [mimport json[m
+ from typing import TYPE_CHECKING, Any[m
+ [m
+ import calendar_client_api[m
+[31m-from googleapiclient.discovery import build  # type: ignore[import-untyped][m
+[32m+[m[32mfrom googleapiclient.discovery import build[m
+ [m
+ from google_calendar_adapter.auth import get_credentials[m
+ from google_calendar_adapter.event_impl import GoogleCalendarEvent[m
+
+[33mcommit 2770538eb1bf7c1ec4a6018f63e72cfdb84cdd27[m
+Author: Calico Wang <jingyuwang@macbook-pro.mynetworksettings.com>
+Date:   Thu Apr 16 17:34:59 2026 -0400
+
+    feat: add Team 5 calendar integration to Discord service
+
+[1mdiff --git a/components/google_calendar_adapter/src/google_calendar_adapter/impl.py b/components/google_calendar_adapter/src/google_calendar_adapter/impl.py[m
+[1mnew file mode 100644[m
+[1mindex 0000000..d98beee[m
+[1m--- /dev/null[m
+[1m+++ b/components/google_calendar_adapter/src/google_calendar_adapter/impl.py[m
+[36m@@ -0,0 +1,141 @@[m
+[32m+[m[32m"""Concrete Google Calendar client implementation for Team 5 integration."""[m
+[32m+[m
+[32m+[m[32mfrom __future__ import annotations[m
+[32m+[m
+[32m+[m[32mimport json[m
+[32m+[m[32mfrom typing import TYPE_CHECKING, Any[m
+[32m+[m
+[32m+[m[32mimport calendar_client_api[m
+[32m+[m[32mfrom googleapiclient.discovery import build  # type: ignore[import-untyped][m
+[32m+[m
+[32m+[m[32mfrom google_calendar_adapter.auth import get_credentials[m
+[32m+[m[32mfrom google_calendar_adapter.event_impl import GoogleCalendarEvent[m
+[32m+[m
+[32m+[m[32mif TYPE_CHECKING:[m
+[32m+[m[32m    from collections.abc import Iterator[m
+[32m+[m[32m    from datetime import datetime[m
+[32m+[m
+[32m+[m
+[32m+[m[32m_NOT_CONNECTED_MSG = "Client is not connected. Call connect() first."[m
+[32m+[m
+[32m+[m[32mclass GoogleCalendarClient(calendar_client_api.Client):[m
+[32m+[m[32m    """Google Calendar-backed implementation of the shared calendar API."""[m
+[32m+[m
+[32m+[m[32m    def __init__([m
+[32m+[m[32m            self,[m
+[32m+[m[32m            calendar_id: str = "primary",[m
+[32m+[m[32m            tasklist_id: str = "@default",[m
+[32m+[m[32m            credentials_path: str | None = None,[m
+[32m+[m[32m            token_path: str | None = None,[m
+[32m+[m[32m    ) -> None:[m
+[32m+[m[32m        """Initialize the Google Calendar client configuration."""[m
+[32m+[m[32m        super().__init__()[m
+[32m+[m[32m        self.calendar_id = calendar_id[m
+[32m+[m[32m        self.tasklist_id = tasklist_id[m
+[32m+[m[32m        self._credentials_path = credentials_path[m
+[32m+[m[32m        self._token_path = token_path[m
+[32m+[m[32m        self._service: Any | None = None[m
+[32m+[m[32m        self._tasks_service: Any | None = None[m
+[32m+[m
+[32m+[m[32m    def connect(self) -> None:[m
+[32m+[m[32m        """Authenticate and create Google Calendar service clients."""[m
+[32m+[m[32m        creds = get_credentials([m
+[32m+[m[32m            credentials_path=self._credentials_path,[m
+[32m+[m[32m            token_path=self._token_path,[m
+[32m+[m[32m        )[m
+[32m+[m[32m        self._service = build("calendar", "v3", credentials=creds)[m
+[32m+[m[32m        self._tasks_service = build("tasks", "v1", credentials=creds)[m
+[32m+[m
+[32m+[m[32m    def _require_calendar_service(self) -> Any: # noqa: ANN401[m
+[32m+[m[32m        """Return the connected calendar service or raise if not connected."""[m
+[32m+[m[32m        if not self._service:[m
+[32m+[m[32m            raise RuntimeError(_NOT_CONNECTED_MSG)[m
+[32m+[m[32m        return self._service[m
+[32m+[m
+[32m+[m[32m    def get_event(self, event_id: str) -> calendar_client_api.Event:[m
+[32m+[m[32m        """Fetch a single event by its ID."""[m
+[32m+[m[32m        svc = self._require_calendar_service()[m
+[32m+[m[32m        response = svc.events().get([m
+[32m+[m[32m            calendarId=self.calendar_id,[m
+[32m+[m[32m            eventId=event_id,[m
+[32m+[m[32m        ).execute()[m
+[32m+[m[32m        return GoogleCalendarEvent(response)[m
+[32m+[m
+[32m+[m[32m    def create_event([m
+[32m+[m[32m            self,[m
+[32m+[m[32m            event: calendar_client_api.Event,[m
+[32m+[m[32m    ) -> calendar_client_api.Event:[m
+[32m+[m[32m        """Create a new calendar event."""[m
+[32m+[m[32m        raise NotImplementedError[m
+[32m+[m
+[32m+[m[32m    def update_event([m
+[32m+[m[32m            self,[m
+[32m+[m[32m            event: calendar_client_api.Event,[m
+[32m+[m[32m    ) -> calendar_client_api.Event:[m
+[32m+[m[32m        """Update an existing calendar event."""[m
+[32m+[m[32m        raise NotImplementedError[m
+[32m+[m
+[32m+[m[32m    def delete_event(self, event_id: str) -> None:[m
+[32m+[m[32m        """Delete a calendar event by its ID."""[m
+[32m+[m[32m        raise NotImplementedError[m
+[32m+[m
+[32m+[m[32m    def get_events([m
+[32m+[m[32m            self,[m
+[32m+[m[32m            start_time: datetime,[m
+[32m+[m[32m            end_time: datetime,[m
+[32m+[m[32m    ) -> Iterator[calendar_client_api.Event]:[m
+[32m+[m[32m        """Yield events within the given time range."""[m
+[32m+[m[32m        svc = self._require_calendar_service()[m
+[32m+[m[32m        page_token = None[m
+[32m+[m
+[32m+[m[32m        while True:[m
+[32m+[m[32m            events_result = svc.events().list([m
+[32m+[m[32m                calendarId=self.calendar_id,[m
+[32m+[m[32m                timeMin=start_time.isoformat(),[m
+[32m+[m[32m                timeMax=end_time.isoformat(),[m
+[32m+[m[32m                singleEvents=True,[m
+[32m+[m[32m                orderBy="startTime",[m
+[32m+[m[32m                pageToken=page_token,[m
+[32m+[m[32m            ).execute()[m
+[32m+[m
+[32m+[m[32m            for event in events_result.get("items", []):[m
+[32m+[m[32m                yield GoogleCalendarEvent(event)[m
+[32m+[m
+[32m+[m[32m            page_token = events_result.get("nextPageToken")[m
+[32m+[m[32m            if not page_token:[m
+[32m+[m[32m                break[m
+[32m+[m
+[32m+[m[32m    def from_raw_data(self, raw_data: str) -> calendar_client_api.Event:[m
+[32m+[m[32m        """Build an event object from raw JSON data."""[m
+[32m+[m[32m        data = json.loads(raw_data)[m
+[32m+[m[32m        return GoogleCalendarEvent(data)[m
+[32m+[m
+[32m+[m[32m    def get_task(self, task_id: str) -> calendar_client_api.Task:[m
+[32m+[m[32m        """Fetch a single task by its ID."""[m
+[32m+[m[32m        raise NotImplementedError[m
+[32m+[m
+[32m+[m[32m    def create_task(self, task: calendar_client_api.Task) -> calendar_client_api.Task:[m
+[32m+[m[32m        """Create a new task."""[m
+[32m+[m[32m        raise NotImplementedError[m
+[32m+[m
+[32m+[m[32m    def update_task(self, task: calendar_client_api.Task) -> calendar_client_api.Task:[m
+[32m+[m[32m        """Update an existing task."""[m
+[32m+[m[32m        raise NotImplementedError[m
+[32m+[m
+[32m+[m[32m    def delete_task(self, task_id: str) -> None:[m
+[32m+[m[32m        """Delete a task by its ID."""[m
+[32m+[m[32m        raise NotImplementedError[m
+[32m+[m
+[32m+[m[32m    def get_tasks([m
+[32m+[m[32m            self,[m
+[32m+[m[32m            _start_time: datetime,[m
+[32m+[m[32m            _end_time: datetime,[m
+[32m+[m[32m    ) -> Iterator[calendar_client_api.Task]:[m
+[32m+[m[32m        """Return tasks in a time range."""[m
+[32m+[m[32m        if False:[m
+[32m+[m[32m            yield[m
+[32m+[m[32m        return[m
+[32m+[m
+[32m+[m[32m    def mark_task_completed(self, task_id: str) -> None:[m
+[32m+[m[32m        """Mark a task as completed."""[m
+[32m+[m[32m        raise NotImplementedError[m

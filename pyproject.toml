@@ -5,10 +5,13 @@ description = "OSPSD Team 08 — Chat client with Discord implementation"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "calendar-client-api",
+    "chat-client-api",
     "dotenv>=0.9.9",
     "fastapi>=0.135.1",
     "httpx>=0.28.1",
     "itsdangerous>=2.2.0",
+    "prometheus-fastapi-instrumentator>=6.1.0",
     "requests>=2.32.5",
     "uvicorn>=0.42.0",
 ]
@@ -27,9 +30,10 @@ dev = [
 members = ["components/*"]
 
 [tool.uv.sources]
-chat-client-api = { workspace = true }
 fast-api-client = { workspace = true }
 chat-client-adapter = { workspace = true }
+calendar-client-api = { git = "https://github.com/samuelj25/ospsd-team-05", subdirectory = "components/calendar_client_api", rev = "331167b7020bc0bdc58afd8f1b07fdc5add1310b" }
+chat-client-api = { git = "https://github.com/HarshithKoriRaj/Shared-API.git", rev = "ebb37e189065760f2090f1488d376485b7b56b20" }
 
 # ruff configuration borrowed from https://github.com/nyu/oss-taapp-example/blob/root/pyproject.toml
 [tool.ruff]
@@ -71,15 +75,40 @@ ignore = [
 strict = true
 python_version = "3.13"
 mypy_path = [
-    "components/chat_client_api/src",
     "components/discord_client_impl/src",
     "components/discord_service/src",
-    "components/discord_service/src",
+    "components/chat_client_adapter/src",
+    "components/discord_service_api_client/src",
 ]
+ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "fast_api_client.*"
 ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "calendar_client_api.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "ospsd_calendar_api.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "google_calendar_adapter.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "calendar_integration.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "test_service"
+ignore_errors = true  # Team 5 calendar API has conflicting method signatures between calendar_client_api and ospsd_calendar_api
+
+[[tool.mypy.overrides]]
+module = "test_discord_service"
+ignore_errors = true  # Same as above
 
 [tool.pytest.ini_options]
 minversion = "8.0"
@@ -87,10 +116,10 @@ testpaths = ["tests", "components"]
 addopts = "-v --tb=short"
 env_files = [".env"]
 pythonpath = [
-    "components/chat_client_api/src",
     "components/discord_client_impl/src",
     "components/discord_service/src",
-    "components/discord_service/src",
+    "components/chat_client_adapter/src",
+    "components/discord_service_api_client/src",
 ]
 markers = [
     "integration: Integration tests for DI verification",

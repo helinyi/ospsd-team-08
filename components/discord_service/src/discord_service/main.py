@@ -1,27 +1,68 @@
 """The endpoints for the Discord service."""
+
 from __future__ import annotations
 
 import os
+import secrets as _secrets  # pragma: no cover
+from datetime import UTC, datetime
 from typing import Annotated
 
 import discord_client_impl  # noqa: F401
+import google_calendar_adapter  # noqa: F401
+import openai_ai_client_impl  # noqa: F401
 import requests
 import uvicorn
+from ai_client_api import ToolLoopExhaustedError
+from calendar_client_api.client import Client as CalendarClient  # noqa: TC002
+from calendar_integration.service import (
+    get_events_message,
+    get_tomorrows_events_message,
+)
+from chat_client_api import Channel, Message
 from chat_client_api import get_client as get_chat_client
 from chat_client_api.client import ChatClient  # noqa: TC002
-from chat_client_api.models import Channel, Message  # noqa: TC002
 from discord_client_impl.auth import DiscordOAuthHandler
 from dotenv import load_dotenv
 from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
+from google_calendar_adapter import get_calendar_client as get_connected_calendar_client
+from openai_ai_client_impl.client import OpenAIAIClient
+from prometheus_fastapi_instrumentator import Instrumentator, metrics
 from starlette.middleware.sessions import SessionMiddleware
 
 load_dotenv()
 
 app = FastAPI()
 
-secret_key = os.environ.get("SESSION_SECRET_KEY", "dev-secret-key")
+instrumentator = Instrumentator()
+
+instrumentator.add(
+    metrics.requests(
+        metric_name="requests_total",
+        metric_namespace="discord_service",
+        metric_subsystem="api",
+    )
+)
+
+instrumentator.add(
+    metrics.latency(
+        metric_name="request_latency_seconds",
+        metric_namespace="discord_service",
+        metric_subsystem="api",
+    )
+)
+
+instrumentator.instrument(
+    app, metric_namespace="discord_service", metric_subsystem="api"
+).expose(app)
+
+
+secret_key = os.environ.get("SESSION_SECRET_KEY")
+if not secret_key:
+    secret_key = _secrets.token_urlsafe(32)  # pragma: no cover
+
 app.add_middleware(SessionMiddleware, secret_key=secret_key)
+
 
 def get_client() -> ChatClient:  # pragma: no cover
     """Create a ChatClient instance via dependency injection."""
@@ -31,6 +72,14 @@ def get_client() -> ChatClient:  # pragma: no cover
 def get_oauth_handler() -> DiscordOAuthHandler:
     """Dependency for OAuth flow management."""
     return DiscordOAuthHandler.from_env()
+
+
+def get_calendar_client() -> CalendarClient:  # pragma: no cover
+    """Create a CalendarClient instance via dependency injection."""
+    try:
+        return get_connected_calendar_client()
+    except (RuntimeError, FileNotFoundError) as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
 
 
 @app.get("/health")
@@ -60,6 +109,7 @@ def auth_callback(
         raise HTTPException(status_code=400, detail=str(error)) from error
     request.session["access_token"] = token
     return {"message": "Authentication successful"}
+
 
 @app.get("/users/me")
 def get_current_user(request: Request) -> dict[str, str]:
@@ -97,6 +147,7 @@ def get_current_user(request: Request) -> dict[str, str]:
         "discriminator": data.get("discriminator", ""),
     }
 
+
 @app.get("/channels")
 def get_channels(
     client: Annotated[ChatClient, Depends(get_client)],
@@ -105,17 +156,15 @@ def get_channels(
     return client.get_channels()
 
 
-def _get_channel_by_id(
-    channel_id: str, client: ChatClient
-) -> Channel:
+def _get_channel_by_id(channel_id: str, client: ChatClient) -> Channel:
     """Resolve a string ID into a Channel object reference."""
     channels = client.get_channels()
-    target = next((c for c in channels if c.id == channel_id), None)
+    target = next((c for c in channels if c.channel_id == channel_id), None)
 
     if not target:
         raise HTTPException(
             status_code=404,
-            detail=f"Channel with ID {channel_id} not found in this guild."
+            detail=f"Channel with ID {channel_id} not found in this guild.",
         )
     return target
 
@@ -134,13 +183,15 @@ async def send_channel_message(
         content: The text of the message.
 
     """
-    channel_obj = _get_channel_by_id(channel_id, client)
+    _get_channel_by_id(channel_id, client)
 
     try:
-        return client.send_message(channel_obj, content)
+        return client.send_message(channel_id, content)
 
     except RuntimeError as error:
-        raise HTTPException(status_code=502, detail=f"Discord API error: {error}") from error
+        raise HTTPException(
+            status_code=502, detail=f"Discord API error: {error}"
+        ) from error
 
 
 @app.get("/channels/{channel_id}/messages")
@@ -159,15 +210,61 @@ def get_channel_messages(
         limit: The maximum number of messages to return (default 10, max 100).
 
     """
-    channel_obj = _get_channel_by_id(channel_id, client)
+    _get_channel_by_id(channel_id, client)
 
     try:
-        return client.get_messages(channel_obj, limit=limit)
+        return client.get_messages(channel_id, limit=limit)
 
     except RuntimeError as error:
         raise HTTPException(
             status_code=502, detail=f"Discord API error: {error}"
         ) from error
+
+@app.get("/calendar/tomorrow")
+def get_tomorrows_events(
+        calendar_client: Annotated[CalendarClient, Depends(get_calendar_client)],
+) -> dict[str, str]:
+    """Return tomorrow's calendar events as a formatted chat message."""
+    try:
+        message = get_tomorrows_events_message(calendar_client, datetime.now(UTC))
+    except RuntimeError as error:
+        raise HTTPException(status_code=502, detail=str(error)) from error
+
+    return {"message": message}
+
+@app.get("/calendar/events")
+def get_calendar_events(
+        start_time: datetime,
+        end_time: datetime,
+        calendar_client: Annotated[CalendarClient, Depends(get_calendar_client)],
+) -> dict[str, str]:
+    """Return calendar events for a given time range."""
+    message = get_events_message(calendar_client, start_time, end_time)
+    return {"message": message}
+
+
+def get_optional_calendar_client() -> CalendarClient | None:  # pragma: no cover
+    """Return calendar client if configured, None otherwise."""
+    try:
+        return get_connected_calendar_client()
+    except (RuntimeError, FileNotFoundError):
+        return None
+
+@app.post("/ai/chat")
+def ai_chat(
+    user_input: Annotated[str, Body(embed=True)],
+    calendar: Annotated[CalendarClient | None, Depends(get_optional_calendar_client)],
+) -> dict[str, str]:
+    """AI chat endpoint that uses the registered AI client."""
+    try:
+        ai_client = OpenAIAIClient(calendar_client=calendar)
+        response = ai_client.run(user_input)
+    except ToolLoopExhaustedError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=str(error)) from error
+    else:
+        return {"response": response}
 
 
 if __name__ == "__main__":
