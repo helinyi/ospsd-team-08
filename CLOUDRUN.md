@@ -107,6 +107,7 @@ infra/terraform
 It manages:
 
 - Existing Cloud Run service: `discord-service`
+- Prometheus Cloud Run service for telemetry
 - Existing Artifact Registry repository: `cloud-run-source-deploy`
 - Required Google APIs
 - CircleCI Terraform deployer service account and IAM
@@ -201,6 +202,7 @@ Set these application variables in CircleCI:
 | `DISCORD_BOT_TOKEN` | Secret Manager secret `discord-bot-token` |
 | `DISCORD_GUILD_ID` | Secret Manager secret `discord-guild-id` |
 | `SESSION_SECRET_KEY` | Secret Manager secret `session-secret-key` |
+| `OPENAI_API_KEY` | Secret Manager secret `openai-api-key` |
 
 CircleCI reads those variables during deployment and adds them as new Secret Manager versions. Cloud Run then reads the values from Secret Manager at runtime.
 
@@ -251,3 +253,19 @@ Secret values are set in CircleCI and copied into Secret Manager during deployme
 | `OPENAI_API_KEY` | OpenAI API key for AI client integration |
 | `GOOGLE_OAUTH_CREDENTIALS_PATH` | Path to Google OAuth credentials for calendar integration |
 | `GOOGLE_OAUTH_TOKEN_PATH` | Path to Google OAuth token for calendar integration |
+
+### Grafana Telemetry Setup
+
+Before deploying Prometheus, create these secrets out-of-band via gcloud:
+
+```bash
+# Upload Grafana API token
+printf 'YOUR_GRAFANA_TOKEN' | gcloud secrets create grafana-token \
+  --data-file=- --project=ospsd8-discord
+
+# Upload Prometheus config
+gcloud secrets create prometheus-config \
+  --data-file=prometheus.yml --project=ospsd8-discord
+```
+
+Terraform owns the Cloud Run mount — secrets are managed via gcloud.

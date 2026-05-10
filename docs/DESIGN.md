@@ -210,6 +210,11 @@ Request latency, success rate, and failure rate are instrumented via `prometheus
 - Failure rate (4xx/5xx responses)
 
 > **Note:** `/metrics` is exposed publicly by default via `prometheus_fastapi_instrumentator`. This is acceptable for grading purposes, but in production the metrics endpoint should be protected behind a private path, API token, or IAM allowlist to prevent exposing internal service telemetry.
+
+
+Metrics are visualized in a Grafana Cloud dashboard at:
+[https://aw3950.grafana.net/public-dashboards/11a16d893f7e4302acfaf12feda6a33e](https://aw3950.grafana.net/public-dashboards/11a16d893f7e4302acfaf12feda6a33e)
+
 ---
 
 ## Infrastructure as Code (HW3)
